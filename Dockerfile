@@ -664,6 +664,12 @@ RUN \
     sudo npm install -g @openai/codex \
   ; fi
 
+# install herdr
+RUN \
+  --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \
+  curl -fsSL https://herdr.dev/install.sh -o /dlu/herdr-install.sh \
+  && sh /dlu/herdr-install.sh
+
 # install extra bash things
 RUN mkdir ~/.bash
 

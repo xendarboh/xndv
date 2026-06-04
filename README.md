@@ -121,6 +121,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
   - [CLIProxyAPI Quota Inspector](https://github.com/AllenReder/CLIProxyAPI-Quota-Inspector): Terminal tool for monitoring CPA quota usage
 - [Codex](https://github.com/openai/codex): Lightweight coding agent that runs in your terminal _(INSTALL_CODEX)_
 - [Docker Model Runner](https://docs.docker.com/ai/model-runner/) (DMR): Run LLMs locally via Docker
+- [herdr](https://github.com/ogulcancelik/herdr): Agent multiplexer that lives in your terminal
 - [LiteLLM](https://github.com/BerriAI/litellm): Unified LLM proxy — 100+ providers, one endpoint, cost tracking, caching
 - [llmfit](https://github.com/AlexsJones/llmfit): Score and rank LLMs by hardware fit (RAM, CPU, GPU)
 - [Open WebUI](https://github.com/open-webui/open-webui): Chat UI for local LLMs
