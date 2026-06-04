@@ -15,6 +15,6 @@ customCommands:
     output: terminal
   - key: <c-p>
     description: "[xndv] Preview image with Kitty"
-    command: "kitty +kitten icat --hold {{.SelectedFile.Name}}"
+    command: 'kitty +kitten icat --hold "{{.SelectedFile.Name}}"'
     context: files
     output: terminal
