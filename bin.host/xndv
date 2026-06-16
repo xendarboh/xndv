@@ -5,6 +5,9 @@ SELECTOR_CHAIN="${XNDV_SELECTOR:-rofi dmenu fzf}"
 CONTAINER_PREFIX="xndv"
 XNDV_HOST_DATA="${HOME}/.local/share/xndv"
 XNDV_USER="xndv"
+HERDR_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/herdr"
+HERDR_CONTAINER_CONFIG_DIR="/home/${XNDV_USER}/.config/herdr"
+HERDR_SOCKET_FILE="${HERDR_CONFIG_DIR}/herdr.sock"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -29,6 +32,32 @@ ui() {
   dmenu) dmenu -i -p "$p" ;;
   fzf) fzf --prompt "$p> " --reverse --height 40% --query "$f" --print-query | tail -1 || true ;;
   esac
+}
+
+append_herdr_env() {
+  local -n out_args="$1"
+  local enabled="${2:-1}"
+  local herdr_socket_path herdr_client_socket_path
+
+  [[ "$enabled" == "1" ]] || return 0
+  [[ "${HERDR_ENV:-}" == "1" ]] || return 0
+  [[ -n "${HERDR_PANE_ID:-}" && -n "${HERDR_SOCKET_PATH:-}" ]] || return 0
+
+  herdr_socket_path="${HERDR_SOCKET_PATH/#${HERDR_CONFIG_DIR}/${HERDR_CONTAINER_CONFIG_DIR}}"
+  out_args+=(--env "HERDR_ENV=${HERDR_ENV}")
+  out_args+=(--env "HERDR_PANE_ID=${HERDR_PANE_ID}")
+  out_args+=(--env "HERDR_SOCKET_PATH=${herdr_socket_path}")
+
+  if [[ -n "${HERDR_CLIENT_SOCKET_PATH:-}" ]]; then
+    herdr_client_socket_path="${HERDR_CLIENT_SOCKET_PATH/#${HERDR_CONFIG_DIR}/${HERDR_CONTAINER_CONFIG_DIR}}"
+    out_args+=(--env "HERDR_CLIENT_SOCKET_PATH=${herdr_client_socket_path}")
+  fi
+}
+
+container_has_herdr_mount() {
+  local container="$1"
+  docker inspect -f '{{range .Mounts}}{{println .Destination}}{{end}}' "$container" 2>/dev/null |
+    grep -Fxq "$HERDR_CONTAINER_CONFIG_DIR"
 }
 
 # TTY: show command and prompt; GUI: auto-run
@@ -81,6 +110,10 @@ MOUNTS=(
   "misc:/src"
   "misc:/srv"
 )
+
+if [[ -d "$HERDR_CONFIG_DIR" ]]; then
+  MOUNTS+=("misc:${HERDR_CONFIG_DIR}:${HERDR_CONTAINER_CONFIG_DIR}")
+fi
 
 # Mode Definitions
 base() {
@@ -213,7 +246,13 @@ cmd_launch() {
   options+=("${primary[@]}" "${aux[@]}")
   sel=$(printf '%s\n' "${options[@]}" | ui "xndv")
   [[ -z "$sel" ]] && exit 0
-  [[ "$sel" != "+ New Instance" ]] && { echo "[xndv] docker exec into container ${sel##* }" && exec docker exec -it "${sel##* }" sh -c 'bash || sh'; }
+  if [[ "$sel" != "+ New Instance" ]]; then
+    container="${sel##* }"
+    exec_args=()
+    container_has_herdr_mount "$container" && append_herdr_env exec_args
+    echo "[xndv] docker exec into container $container"
+    exec docker exec -it "${exec_args[@]}" "$container" sh -c 'bash || sh'
+  fi
 
   #---------------------------------------------------------------------------
   # 2. Mode Selection — choose environment preset (max, min, sys, tty)
@@ -243,6 +282,7 @@ cmd_launch() {
     for dt in "${TAGS[@]:-}"; do
       [[ -n "$tag" && "$tag" == "$dt" ]] && selected[$i]=1
     done
+    [[ "$src" == "$HERDR_CONFIG_DIR" && -S "$HERDR_SOCKET_FILE" ]] && selected[$i]=1
   done
 
   while true; do
@@ -277,17 +317,20 @@ cmd_launch() {
   #---------------------------------------------------------------------------
   vol_args=()
   env_args=()
+  herdr_mount_selected=0
   for i in "${!selected[@]}"; do
     IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
     [[ -z "$dst" ]] && dst="${src/#$HOME\///home/${XNDV_USER}/}"
     [[ ! -d "$src" ]] && mkdir -p "$src"
     vol_args+=("--volume" "$src:$dst${opts:+:$opts}")
+    [[ "$src" == "$HERDR_CONFIG_DIR" ]] && herdr_mount_selected=1
   done
 
   "mode_$mode"
   for env_var in "${ENV[@]}"; do
     env_args+=(--env "$env_var")
   done
+  append_herdr_env env_args "$herdr_mount_selected"
   ARGS_DOCKER+=(--label xndv.mode=$mode)
   [[ "$RUNNER" == "x11docker" ]] &&
     cmd="x11docker --name $inst ${ARGS_X11DOCKER[*]} -- ${ARGS_DOCKER[*]} ${env_args[*]} ${vol_args[*]} -- $IMAGE $SHELL_CMD $inst" ||
