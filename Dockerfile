@@ -61,6 +61,7 @@ RUN \
     psmisc \
     python3-libtmux \
     python3-pygments \
+    python3-venv \
     rake \
     ranger \
     rsync \
