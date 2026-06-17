@@ -1,0 +1,63 @@
+{
+  "$comment": "xndv Claude user settings (git-tracked). Symlinked over ~/.local/share/claude/settings.json by conf/.bash_xndv so install/config changes land here, visible in git. Pushes Claude lifecycle state to herdr (hooks/herdr-claude-state.sh) and routes Bash through rtk. See docs/20260616-herdr-claude.md.",
+  "awaySummaryEnabled": false,
+  "effortLevel": "high",
+  "model": "opus",
+  "theme": "dark",
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "skipAutoPermissionPrompt": true,
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/herdr-claude-state.sh\" working"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/herdr-claude-state.sh\" working"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/herdr-claude-state.sh\" blocked"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/herdr-claude-state.sh\" idle"
+          }
+        ]
+      }
+    ]
+  }
+}

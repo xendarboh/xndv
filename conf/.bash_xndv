@@ -73,6 +73,15 @@ if [ ! -e ~/.aztec ]; then
   ln -sfn ${D} ~/.aztec
 fi
 
+# symlink Claude settings from repo so install/config changes are git-tracked
+# (CLAUDE_CONFIG_DIR=~/.local/share/claude is the persisted volume, not build-stow reachable)
+F=~/.local/share/claude/settings.json
+if [ ! -e ${F} ]; then
+  ln -sfn ${XNDV_DIR}/conf/.claude/settings.json ${F}
+elif [ ! -L ${F} ]; then
+  echo "[xndv] WARN: ${F} clobbered; sync to repo, then: ln -sfn ${XNDV_DIR}/conf/.claude/settings.json ${F}"
+fi
+
 # ensure custom CODEX_HOME exist, so codex starts without error ~INSTALL_CODEX
 mkdir -p ~/.local/share/codex
 
