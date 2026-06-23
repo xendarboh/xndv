@@ -18,6 +18,9 @@ help: ## print this help message with some nifty mojo
 build-tty: ## build tty-only docker image
 	time $(COMPOSE_BUILD) build xen-dev
 
+build-tty-sys: build-tty ## build tty+sysbox docker image
+	time $(COMPOSE_BUILD) build xen-sys
+
 rebuild-tty: ## (re)build tty-only docker image with --no-cache --pull
 	time $(COMPOSE_BUILD) build --no-cache --pull xen-dev
 
