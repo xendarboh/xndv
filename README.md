@@ -39,7 +39,7 @@ make build
 | docker or podman                                                                            | Core                      | Container runtime                                                                                                                                   |
 | docker compose                                                                              | Building                  | Build orchestration                                                                                                                                 |
 | make                                                                                        | Building                  | Recommended; or run [Makefile](Makefile) commands manually                                                                                          |
-| [x11docker](https://github.com/mviereck/x11docker#installation)                             | `max`, `min`, `sys` modes | Not needed for `tty` mode                                                                                                                           |
+| [x11docker](https://github.com/mviereck/x11docker#installation)                             | `max`, `min`, `sys` (x11)  | Desktop/GUI runner only; not needed for `tty` mode or headless (`sys` on a server)                                                                  |
 | [sysbox](https://github.com/nestybox/sysbox/blob/master/docs/user-guide/install-package.md) | `sys` mode                | Recommended for Docker-in-Docker                                                                                                                    |
 | rofi / dmenu / fzf                                                                          | Launcher                  | Any one; detected in order                                                                                                                          |
 | [Nerd Font](https://github.com/ryanoasis/nerd-fonts#font-installation)                      | `tty` mode                | Container provides fonts for GUI modes                                                                                                              |
@@ -59,6 +59,8 @@ The `bin.host/xndv` launcher provides an interactive menu (via `rofi`, `dmenu`, 
 | `tty` | TTY-only, no X11                                                  | No  |    No    | Headless servers, SSH sessions     |
 
 All modes are containerized and sandboxed; the difference is capability and host integration.
+
+**Runner**: A mode is launched under one of two runners — `x11` (x11docker + kitty window) or `tty` (headless `docker run -d`, re-enter via the menu). The launcher offers only the runners your host supports (x11docker installed vs. not) and only modes whose image is built. On a server without x11docker, `sys` and `tty` run headless automatically; where x11docker is installed, modes that support both (e.g. `sys`) show a runner choice (`sys·x11`, `sys·tty`).
 
 **Selector**: The launcher probes for an available selector. Override with `bin.host/xndv -s <selector>`.
 
@@ -81,7 +83,9 @@ docker run -it --rm --network=host xen/dev
 
 The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, rootless Docker-in-Docker without `--privileged`.
 
-**Tradeoffs**: No direct GPU (uses `--gpu` fallback), bridged networking (no `--network=host`).
+**Headless servers**: `sys` runs without x11docker. Build with `make build-tty-sys` (stacks `xen/sys` on the TTY `xen/dev`, no X11 layer) and the launcher runs it via plain `docker run -d` — create the instance, then re-enter it from the launcher menu (`docker exec`). x11docker is not required.
+
+**Tradeoffs**: No direct GPU (uses `--gpu` fallback under x11), bridged networking (no `--network=host`).
 
 **Persistence**: Inner Docker data stored at `~/.local/share/xndv/xndv/sysbox/docker`.
 

@@ -115,11 +115,28 @@ if [[ -d "$HERDR_CONFIG_DIR" ]]; then
   MOUNTS+=("misc:${HERDR_CONFIG_DIR}:${HERDR_CONTAINER_CONFIG_DIR}")
 fi
 
+# Runner Definitions — how a mode is presented/launched
+#   x11docker : desktop reality — x11docker + kitty window (foreground)
+#   docker    : headless reality — docker run -d, re-enter via docker exec
+# tag    : short label shown in the menu when a mode offers a runner choice
+# shell  : container command for the runner (foreground GUI vs detached idle)
+declare -A RUNNER_TAG=([x11docker]="x11" [docker]="tty")
+declare -A RUNNER_SHELL=([x11docker]="kitty -T" [docker]="sleep infinity")
+declare -A RUNNER_NOTE=([x11docker]="GUI window" [docker]="headless, background")
+
+# A runner is usable on this host?
+runner_available() {
+  case "$1" in
+  x11docker) command -v x11docker &>/dev/null ;;
+  docker) command -v docker &>/dev/null ;;
+  *) return 1 ;;
+  esac
+}
+
 # Mode Definitions
 base() {
-  RUNNER="x11docker"
+  RUNNERS=(x11docker)
   IMAGE="xen/dev"
-  SHELL_CMD="kitty -T"
   ARGS_X11DOCKER=(
     --clipboard
     --dbus
@@ -165,6 +182,7 @@ mode_sys() {
   base
   DESC="Docker-in-Docker via sysbox"
   IMAGE="xen/sys"
+  RUNNERS=(x11docker docker)
   ARGS_X11DOCKER+=(
     --cap-default
     --gpu=virgl
@@ -175,6 +193,7 @@ mode_sys() {
     --cap-add=NET_ADMIN
     --cap-add=NET_RAW
     --cap-add=SYS_ADMIN
+    --runtime=sysbox-runc
   )
   ENV=(
     "XNDV_HOSTNAME=host.docker.internal"
@@ -205,9 +224,8 @@ mode_min() {
 
 mode_tty() {
   DESC="TTY-only, no X11"
-  RUNNER="docker"
+  RUNNERS=(docker)
   IMAGE="xen/dev"
-  SHELL_CMD="sleep infinity"
   ARGS_DOCKER=(
     --add-host=host.docker.internal:host-gateway
     --network=host
@@ -255,15 +273,48 @@ cmd_launch() {
   fi
 
   #---------------------------------------------------------------------------
-  # 2. Mode Selection — choose environment preset (max, min, sys, tty)
+  # 2. Mode Selection — choose environment preset × runner, filtered to what
+  # this host can actually run (image present + runner available). A runner tag
+  # (x11/tty) is shown only when a mode offers more than one available runner.
   #---------------------------------------------------------------------------
   modes=($(declare -F | grep "mode_" | cut -d_ -f2-))
-  m_sel=$(ui "Mode" <<<"$(for m in "${modes[@]}"; do (
-    "mode_$m"
-    printf "%-10s │ %s\n" "$m" "$DESC"
-  ); done)")
+  menu=()
+  for m in "${modes[@]}"; do
+    # probe mode metadata in a subshell so mode-internal MOUNTS+=/ENV+= appends
+    # don't leak between modes (the selected mode is re-evaluated cleanly below)
+    IFS='|' read -r p_image p_desc p_runners < <(
+      "mode_$m"
+      printf '%s|%s|%s\n' "$IMAGE" "$DESC" "${RUNNERS[*]}"
+    )
+    docker image inspect "$p_image" &>/dev/null || continue
+    avail=()
+    for r in $p_runners; do runner_available "$r" && avail+=("$r"); done
+    [[ ${#avail[@]} -eq 0 ]] && continue
+    for r in "${avail[@]}"; do
+      if [[ ${#avail[@]} -gt 1 ]]; then
+        printf -v line "%-12s │ %s (%s)" "${m}·${RUNNER_TAG[$r]}" "$p_desc" "${RUNNER_NOTE[$r]}"
+      else
+        printf -v line "%-12s │ %s" "$m" "$p_desc"
+      fi
+      menu+=("$line")
+    done
+  done
+  [[ ${#menu[@]} -eq 0 ]] && echo "[xndv] No runnable modes (missing images or runners)" >&2 && exit 1
+
+  m_sel=$(ui "Mode" <<<"$(printf '%s\n' "${menu[@]}")")
   [[ -z "$m_sel" ]] && exit 0
-  mode="${m_sel%% *}"
+
+  # Parse "mode" or "mode·tag" from the selection; resolve the runner.
+  sel_label="${m_sel%% *}"
+  mode="${sel_label%%·*}"
+  if [[ "$sel_label" == *·* ]]; then
+    tag="${sel_label##*·}"
+    for r in "${!RUNNER_TAG[@]}"; do [[ "${RUNNER_TAG[$r]}" == "$tag" ]] && RUNNER="$r"; done
+  else
+    # single available runner — read RUNNERS via subshell (avoid leaking MOUNTS)
+    read -r p_runners < <("mode_$mode"; echo "${RUNNERS[*]}")
+    for r in $p_runners; do runner_available "$r" && RUNNER="$r" && break; done
+  fi
 
   #---------------------------------------------------------------------------
   # 3. Container Name — pre-filled with mode-based default
@@ -331,6 +382,7 @@ cmd_launch() {
     env_args+=(--env "$env_var")
   done
   append_herdr_env env_args "$herdr_mount_selected"
+  SHELL_CMD="${RUNNER_SHELL[$RUNNER]}"
   ARGS_DOCKER+=(--label xndv.mode=$mode)
   [[ "$RUNNER" == "x11docker" ]] &&
     cmd="x11docker --name $inst ${ARGS_X11DOCKER[*]} -- ${ARGS_DOCKER[*]} ${env_args[*]} ${vol_args[*]} -- $IMAGE $SHELL_CMD $inst" ||
