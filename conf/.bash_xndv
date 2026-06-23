@@ -75,6 +75,7 @@ fi
 
 # symlink Claude settings from repo so install/config changes are git-tracked
 # (CLAUDE_CONFIG_DIR=~/.local/share/claude is the persisted volume, not build-stow reachable)
+mkdir -p ~/.local/share/claude
 F=~/.local/share/claude/settings.json
 if [ ! -e ${F} ]; then
   ln -sfn ${XNDV_DIR}/conf/.claude/settings.json ${F}
