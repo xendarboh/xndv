@@ -23,6 +23,7 @@ services:
     build:
       context: ./
       args:
+        - _USER_ID
         - IMAGE_BASE
         - INSTALL_AIDER
         - INSTALL_BROWSER_BRAVE
