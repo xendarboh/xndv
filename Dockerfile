@@ -328,7 +328,6 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 # install node things
 RUN npm install --global \
-    diff-so-fancy \
     neovim \
     npm-check \
     npm-check-updates \
@@ -502,6 +501,7 @@ RUN \
     fd-find \
     fnm \
     git-absorb \
+    git-delta \
     llmfit \
     ripgrep \
     spacer \

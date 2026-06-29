@@ -185,7 +185,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
 
 ### Git & Version Control
 
-- [diff-so-fancy](https://github.com/so-fancy/diff-so-fancy): Best-lookin' diffs
+- [delta](https://github.com/dandavison/delta): Syntax-highlighting pager for git, diff, grep, and blame output
 - [git](https://github.com/git/git): Latest stable version
   - [gh](https://github.com/cli/cli): GitHub's official CLI
   - [git-absorb](https://github.com/tummychow/git-absorb): Automatic fixup commits
