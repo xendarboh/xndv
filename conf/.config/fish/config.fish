@@ -124,6 +124,7 @@ function gra
 end
 
 abbr b 'git branch -av'
+abbr d 'git diff'
 abbr s 'git status'
 abbr gb 'git branch'
 abbr gg 'git grep'

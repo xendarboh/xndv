@@ -39,7 +39,7 @@ make build
 | docker or podman                                                                            | Core                      | Container runtime                                                                                                                                   |
 | docker compose                                                                              | Building                  | Build orchestration                                                                                                                                 |
 | make                                                                                        | Building                  | Recommended; or run [Makefile](Makefile) commands manually                                                                                          |
-| [x11docker](https://github.com/mviereck/x11docker#installation)                             | `max`, `min`, `sys` (x11)  | Desktop/GUI runner only; not needed for `tty` mode or headless (`sys` on a server)                                                                  |
+| [x11docker](https://github.com/mviereck/x11docker#installation)                             | `max`, `min`, `sys` (x11) | Desktop/GUI runner only; not needed for `tty` mode or headless (`sys` on a server)                                                                  |
 | [sysbox](https://github.com/nestybox/sysbox/blob/master/docs/user-guide/install-package.md) | `sys` mode                | Recommended for Docker-in-Docker                                                                                                                    |
 | rofi / dmenu / fzf                                                                          | Launcher                  | Any one; detected in order                                                                                                                          |
 | [Nerd Font](https://github.com/ryanoasis/nerd-fonts#font-installation)                      | `tty` mode                | Container provides fonts for GUI modes                                                                                                              |
@@ -155,6 +155,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
   - [nix-env.fish](https://github.com/lilyball/nix-env.fish): Nix environment for fish _(INSTALL_NIX)_
   - Shortcuts:
     - `b` git branch -av
+    - `d` git diff
     - `s` git status
     - `gb` git branch
     - `gg` git grep
