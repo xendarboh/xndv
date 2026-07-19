@@ -646,14 +646,10 @@ RUN \
 
 # install opencode
 ARG INSTALL_OPENCODE=0
-ARG OPTIONS_OHMYOPENCODE
-ARG VERSION_OHMYOPENCODE
-ENV OMO_SEND_ANONYMOUS_TELEMETRY=0
 RUN \
   if [ "${INSTALL_OPENCODE}" = "1" ]; then \
     curl -fsSL https://opencode.ai/install | bash \
     && export PATH=/home/${_USER}/.opencode/bin:${PATH} \
-    && bunx oh-my-opencode@${VERSION_OHMYOPENCODE} install --no-tui ${OPTIONS_OHMYOPENCODE} \
     && sudo npm i -g opencode-wakatime && opencode-wakatime --install \
     && sudo npm i -g opentmux \
     && npx get-shit-done-cc --opencode --global \
@@ -765,10 +761,10 @@ COPY --chown=${_USER}:${_USER} . ${XNDV_DIR}
 RUN \
   # stash original files before replacing with symlinks to our custom config files
   files_to_stash=( \
-    /home/${_USER}/.config/opencode/oh-my-opencode.json \
     /home/${_USER}/.config/opencode/opencode.json \
   ) \
   && for file in "${files_to_stash[@]}"; do \
+    test -f "$file" || continue; \
     mkdir -p ~/.xndv/stash/$(dirname "$file") && mv "$file" ~/.xndv/stash/$(dirname "$file")/; \
   done \
   # create dirs so stow symlinks files and not dirs

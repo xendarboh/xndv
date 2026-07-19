@@ -47,7 +47,6 @@ services:
         - INSTALL_TAURI
         - INSTALL_TOMB
         - OPTIONS_NVIM_APPNAME
-        - OPTIONS_OHMYOPENCODE
         - OPTIONS_THEME
         - VERSION_FISH
         - VERSION_KPCLI
@@ -55,7 +54,6 @@ services:
         - VERSION_NEOVIM_FROM_SRC
         - VERSION_NODE
         - VERSION_NOIR
-        - VERSION_OHMYOPENCODE
         - VERSION_TOMB
     image: xen/dev
 

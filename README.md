@@ -91,7 +91,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
 
 ## Tools
 
-> `{alias}` — invoke via shell alias (like `omo` for oh-my-opencode).
+> `{alias}` — invoke via shell alias (like `oc` for OpenCode).
 
 ### Powered By
 
@@ -132,7 +132,6 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
 - [Open WebUI](https://github.com/open-webui/open-webui): Chat UI for local LLMs
 - [OpenCode](https://github.com/anomalyco/opencode): Open source coding agent _(INSTALL_OPENCODE)_ `{oc}`
   - [GSD](https://github.com/gsd-build/get-shit-done): Meta-prompting and spec-driven development system
-  - [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode): Batteries-included agent harness `{omo}`
   - [opentmux](https://github.com/AnganSamadder/opentmux): Smart tmux integration for real-time agent panes
   - [opencode-notifier](https://github.com/mohak34/opencode-notifier): Desktop notifications for OpenCode
   - [opencode-wakatime](https://github.com/angristan/opencode-wakatime): OpenCode usage time tracking

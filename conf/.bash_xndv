@@ -139,7 +139,6 @@ source <(sed 's/=\(.*\)/="\1"/' "${XNDV_DIR}/.env")
 set +a
 
 # Gateway routing: set ENABLE_GATEWAY=1 in .env to activate
-_conf_omo=~/.config/opencode/oh-my-opencode.json
 if [[ "${ENABLE_GATEWAY:-0}" == "1" ]]; then
   echo "[xndv] LLM Gateway routing enabled"
 
@@ -163,17 +162,6 @@ if [[ "${ENABLE_GATEWAY:-0}" == "1" ]]; then
   # X: export ANTHROPIC_DEFAULT_OPUS_MODEL=$(get_model claude-opus)
   # X: export ANTHROPIC_DEFAULT_SONNET_MODEL=$(get_model claude-sonnet)
   # X: export ANTHROPIC_DEFAULT_HAIKU_MODEL=$(get_model claude-haiku)
-
-  # configure oh-my-opencode: jsonc overrides .json
-  test ! -f "${_conf_omo}.og" &&
-    cp "${_conf_omo}" "${_conf_omo}.og" &&
-    cat "${_conf_omo}.og" |
-    sed -E 's/(anthropic|google|openai)/litellm/' >"${_conf_omo}"
-else
-  test -f "${_conf_omo}.og" &&
-    echo "[xndv] LLM Gateway routing disabled" &&
-    cat "${_conf_omo}.og" >"${_conf_omo}" &&
-    rm -f "${_conf_omo}.og"
 fi
 
 ####################################
