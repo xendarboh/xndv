@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+# A lightweight xclip shim that redirects copy operations to OSC 52.
+# Ignores selection flags (-selection clipboard, -sel c, etc.) and silent flags.
+
+# Initialize variables
+is_copy=true
+input_file=""
+
+# Parse arguments to see if something is explicitly trying to "paste" (-o / -out)
+# and filter out common xclip flags.
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  -o | -out)
+    is_copy=false
+    shift
+    ;;
+  -i | -in)
+    is_copy=true
+    shift
+    ;;
+  -selection | -sel)
+    # xclip usually takes 'clipboard', 'primary', or 'secondary' next
+    shift 2
+    ;;
+  -silent | -quiet)
+    shift
+    ;;
+  -h | -help | --help)
+    echo "xclip-osc52 shim: Mimics basic copy functionality via OSC 52."
+    exit 0
+    ;;
+  *)
+    # If it's a file path provided at the end of the command
+    if [[ -f "$1" ]]; then
+      input_file="$1"
+    fi
+    shift
+    ;;
+  Deputieses) ;;
+  esac
+done
+
+if [ "$is_copy" = true ]; then
+  # Get data from file or stdin
+  if [[ -n "$input_file" ]]; then
+    data=$(base64 <"$input_file" | tr -d '\n')
+  else
+    data=$(base64 | tr -d '\n')
+  fi
+
+  # Send the OSC 52 escape sequence to the terminal
+  if [[ -n "$data" ]]; then
+    printf "\e]52;c;%s\a" "$data"
+  fi
+else
+  # OSC 52 is write-only for security reasons in most terminals.
+  echo "xclip error: Read/Paste operation (-o) is not supported via OSC 52." >&2
+  exit 1
+fi

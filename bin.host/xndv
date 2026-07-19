@@ -378,6 +378,7 @@ cmd_launch() {
   done
 
   "mode_$mode"
+  env_args+=(--env "XNDV_MODE=${mode}")
   for env_var in "${ENV[@]}"; do
     env_args+=(--env "$env_var")
   done
