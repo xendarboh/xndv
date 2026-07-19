@@ -292,7 +292,7 @@ cmd_launch() {
     [[ ${#avail[@]} -eq 0 ]] && continue
     for r in "${avail[@]}"; do
       if [[ ${#avail[@]} -gt 1 ]]; then
-        printf -v line "%-12s │ %s (%s)" "${m}·${RUNNER_TAG[$r]}" "$p_desc" "${RUNNER_NOTE[$r]}"
+        printf -v line "%-12s  │ %s (%s)" "${m}·${RUNNER_TAG[$r]}" "$p_desc" "${RUNNER_NOTE[$r]}"
       else
         printf -v line "%-12s │ %s" "$m" "$p_desc"
       fi
