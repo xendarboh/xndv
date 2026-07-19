@@ -128,6 +128,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
 - [herdr](https://github.com/ogulcancelik/herdr): Agent multiplexer that lives in your terminal
 - [LiteLLM](https://github.com/BerriAI/litellm): Unified LLM proxy — 100+ providers, one endpoint, cost tracking, caching
 - [llmfit](https://github.com/AlexsJones/llmfit): Score and rank LLMs by hardware fit (RAM, CPU, GPU)
+- [Oh My Pi](https://github.com/can1357/oh-my-pi): Batteries-included terminal coding agent with LSP, debugger, and subagents _(INSTALL_OMP)_
 - [Open WebUI](https://github.com/open-webui/open-webui): Chat UI for local LLMs
 - [OpenCode](https://github.com/anomalyco/opencode): Open source coding agent _(INSTALL_OPENCODE)_ `{oc}`
   - [GSD](https://github.com/gsd-build/get-shit-done): Meta-prompting and spec-driven development system

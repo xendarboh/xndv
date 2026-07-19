@@ -666,6 +666,13 @@ RUN \
     sudo npm install -g @openai/codex \
   ; fi
 
+# install oh-my-pi
+ARG INSTALL_OMP=0
+RUN \
+  if [ "${INSTALL_OMP}" = "1" ]; then \
+    bun install -g @oh-my-pi/pi-coding-agent \
+  ; fi
+
 # install herdr
 RUN \
   --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \

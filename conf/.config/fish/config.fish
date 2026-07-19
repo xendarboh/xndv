@@ -5,6 +5,7 @@ end
 command -q bat && bat --completion fish | source
 command -q buf && buf completion fish | source
 command -q nargo && nargo generate-completion-script fish | source
+command -q omp && omp completions fish | source
 command -q tinty && tinty generate-completion fish | source
 command -q uv && uv generate-shell-completion fish | source
 fnm completions --shell fish | source
