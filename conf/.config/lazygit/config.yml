@@ -1,5 +1,7 @@
 git:
   autoFetch: false # If true, periodically fetch from remote
+  pagers:
+    - pager: delta --dark --paging=never --syntax-theme gruvbox-dark --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
 gui:
   nerdFontsVersion: "3"
   showFileTree: false # for rendering changes files in a tree format
