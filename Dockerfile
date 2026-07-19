@@ -544,15 +544,17 @@ RUN \
   ; fi
 
 # install noir
-# https://noir-lang.org/docs/getting_started/quick_start
+# https://noir-lang.org/docs/getting_started_manually
+# NOTE: 2026-07: noirup without -v fails with gzip/tar error, remove explicit version once upstream issue ressolved
 ARG INSTALL_NOIR=0
+ARG VERSION_NOIR=1.0.0-beta.22
 ENV NARGO_HOME=/home/${_USER}/.nargo
 RUN \
   --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \
   if [ "${INSTALL_NOIR}" = "1" ]; then \
     wget -qN -P /dlu/noirup https://raw.githubusercontent.com/noir-lang/noirup/refs/heads/main/install \
     && bash /dlu/noirup/install \
-    && ${NARGO_HOME}/bin/noirup \
+    && ${NARGO_HOME}/bin/noirup -v ${VERSION_NOIR} \
     # NOTE: bb installed this way works on ubuntu 24, but not 22 (cuz glibc)
     && wget -qN -P /dlu/bbup https://raw.githubusercontent.com/AztecProtocol/aztec-packages/refs/heads/next/barretenberg/bbup/install \
     && bash /dlu/bbup/install \

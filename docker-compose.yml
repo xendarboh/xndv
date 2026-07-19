@@ -54,6 +54,7 @@ services:
         - VERSION_LLVM
         - VERSION_NEOVIM_FROM_SRC
         - VERSION_NODE
+        - VERSION_NOIR
         - VERSION_OHMYOPENCODE
         - VERSION_TOMB
     image: xen/dev
