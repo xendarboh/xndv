@@ -462,8 +462,9 @@ RUN \
   && mv go ~/.go
 
 # install go things
-RUN go install \
-    github.com/jesseduffield/lazygit@latest \
+RUN echo \
+  && go install github.com/alajmo/mani@latest \
+  && go install github.com/jesseduffield/lazygit@latest \
   && go clean --cache
 
 # install rust

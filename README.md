@@ -168,6 +168,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
     - `tc` tinty cycle configured themes
 - [fzf](https://github.com/junegunn/fzf): Command-line fuzzy finder
 - [htop](https://github.com/htop-dev/htop): Interactive process viewer
+- [mani](https://github.com/alajmo/mani): CLI tool to help you manage multiple repositories
 - [jq](https://github.com/stedolan/jq): Command-line JSON processor
 - [ripgrep](https://github.com/BurntSushi/ripgrep): Fast regex search respecting gitignore
 - [silversearcher-ag](https://github.com/ggreer/the_silver_searcher): Code search faster than ack
