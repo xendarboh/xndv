@@ -2,6 +2,9 @@ git:
   autoFetch: false # If true, periodically fetch from remote
   pagers:
     - pager: delta --dark --paging=never --syntax-theme gruvbox-dark --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+    - pager: delta --keep-plus-minus-markers --dark --paging=never --syntax-theme gruvbox-dark --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+    - pager: delta --side-by-side --dark --paging=never --syntax-theme gruvbox-dark --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+    - pager: delta --side-by-side --line-numbers-left-format="" --line-numbers-right-format="" --dark --paging=never --syntax-theme gruvbox-dark --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
 gui:
   nerdFontsVersion: "3"
   showFileTree: false # for rendering changes files in a tree format
