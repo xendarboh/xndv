@@ -660,7 +660,11 @@ RUN \
 ARG INSTALL_CODEX=0
 ENV CODEX_HOME=/home/${_USER}/.local/share/codex
 RUN \
+  --mount=type=cache,id=apt-archives,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,id=apt-lists,target=/var/lib/apt,sharing=locked \
   if [ "${INSTALL_CODEX}" = "1" ]; then \
+    sudo apt install --no-install-recommends -y -q \
+      bubblewrap \
     sudo npm install -g @openai/codex \
   ; fi
 
