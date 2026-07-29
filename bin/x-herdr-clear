@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+printf '%s\n' \
+  '{"id":"clear","method":"pane.clear_agent_authority","params":{"pane_id":"'"$HERDR_PANE_ID"'"}}' |
+  nc -N -U "$HERDR_SOCKET_PATH"

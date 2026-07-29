@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+EXE=herdr-exec
+
+(($#)) || {
+  echo "Usage: ${EXE} [label --] command [args...]" >&2
+  exit 2
+}
+
+if [[ ${HERDR_ENV:-} != 1 || -z ${HERDR_PANE_ID:-} ]]; then
+  [[ ${2:-} == -- ]] && shift 2
+  exec "$@"
+fi
+
+if [[ ${2:-} == -- ]]; then
+  task=$1
+  shift 2
+else
+  task=$1
+fi
+
+(($#)) || {
+  echo "${EXE}: command required" >&2
+  exit 2
+}
+
+source=${task//[^[:alnum:]:._-]/_}
+source="${EXE}:${source:0:73}"
+
+report() {
+  herdr pane report-agent "$HERDR_PANE_ID" \
+    --source "$source" --agent "$task" --state "$1" \
+    >/dev/null 2>&1 || :
+}
+
+trap 'report blocked' EXIT
+report working
+
+"$@"
+status=$?
+
+((status == 0)) && report idle || report blocked
+
+herdr notification show "${EXE} ${task}" \
+  --body "status: ${status}" \
+  --sound request \
+  >/dev/null 2>&1
+
+trap - EXIT
+exit "$status"
