@@ -665,7 +665,7 @@ RUN \
   if [ "${INSTALL_CODEX}" = "1" ]; then \
     sudo apt install --no-install-recommends -y -q \
       bubblewrap \
-    sudo npm install -g @openai/codex \
+    && sudo npm install -g @openai/codex \
   ; fi
 
 # install oh-my-pi
