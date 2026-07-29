@@ -778,6 +778,7 @@ RUN \
     /home/${_USER}/.config/kitty \
     /home/${_USER}/.config/lazygit \
     /home/${_USER}/.config/opencode \
+    /home/${_USER}/.omp/agent \
   # stow the conf files!
   && stow \
     --dir=${XNDV_DIR} \
