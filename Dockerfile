@@ -663,9 +663,7 @@ RUN \
   --mount=type=cache,id=apt-archives,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,id=apt-lists,target=/var/lib/apt,sharing=locked \
   if [ "${INSTALL_CODEX}" = "1" ]; then \
-    sudo apt install --no-install-recommends -y -q \
-      bubblewrap \
-    && sudo npm install -g @openai/codex \
+    sudo npm install -g @openai/codex \
   ; fi
 
 # install oh-my-pi
@@ -686,7 +684,8 @@ RUN mkdir ~/.bash
 
 # install extra fish things
 SHELL ["/bin/fish", "--login", "-c"]
-RUN --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \
+RUN \
+  --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \
   wget -qN -P /dlu/fisher https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish \
   && source /dlu/fisher/fisher.fish \
   && fisher install \
