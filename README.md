@@ -323,10 +323,15 @@ make help       # All available targets
 
 ### Dotfiles
 
-- `conf/` — Built-in configs, shipped with xndv source, baked into image
-- `conf.local/` — Your customizations go here; gitignored, volume-mapped at runtime
+- `conf/` — Git-tracked user configuration, stowed to the user's home directory during the image build
+- `conf.local/` — Private/local user configuration, gitignored and stowed to the user's home directory at runtime
+- `conf.system/` — Git-tracked system configuration, stowed to the root filesystem (`/`) during the image build
 
-Both directories are [stow](https://github.com/aspiers/stow)'d to the user's home directory at container start (ex: `conf.local/.aws/` → `~/.aws/`).
+The build-time Stow links target files under the xndv source tree. When the host source tree is mounted at
+`~/src`, edits to existing files in `conf/` and `conf.system/` are visible in the container without rebuilding
+the image. For example, `conf.system/etc/codex/config.toml` is available as `/etc/codex/config.toml`.
+
+Runtime-only and private files belong in `conf.local/` (for example, `conf.local/.aws/` → `~/.aws/`):
 
 ```sh
 cp -a conf.local-example conf.local
