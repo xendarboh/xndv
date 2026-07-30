@@ -826,6 +826,13 @@ ENV NVIM_APPNAME=${OPTIONS_NVIM_APPNAME}
 ########################################################################
 USER root
 
+# stow system configuration into the root filesystem
+RUN stow \
+  --dir=${XNDV_DIR} \
+  --target=/ \
+  --verbose \
+  conf.system
+
 # /home/${_USER} --> /etc/skel
 # symlink xndv user's home to /etc/skel to support x11docker user home
 RUN mv /etc/skel /etc/skel.bak \
