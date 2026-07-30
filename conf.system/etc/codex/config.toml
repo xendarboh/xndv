@@ -1,0 +1,6 @@
+# xndv is a sandbox... so full throttle!
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+[projects."/home/xndv/src/xndv"]
+trust_level = "trusted"
