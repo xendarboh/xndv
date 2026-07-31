@@ -75,28 +75,18 @@ if [ ! -e ~/.aztec ]; then
   ln -sfn ${D} ~/.aztec
 fi
 
-# symlink Claude settings from repo so install/config changes are git-tracked
-# (CLAUDE_CONFIG_DIR=~/.local/share/claude is the persisted volume, not build-stow reachable)
-mkdir -p ~/.local/share/claude
-F=~/.local/share/claude/settings.json
-if [ ! -e ${F} ]; then
-  ln -sfn ${XNDV_DIR}/conf/.claude/settings.json ${F}
-elif [ ! -L ${F} ]; then
-  echo "[xndv] WARN: ${F} clobbered; sync to repo, then: ln -sfn ${XNDV_DIR}/conf/.claude/settings.json ${F}"
-fi
-
 # ensure custom CODEX_HOME exist, so codex starts without error ~INSTALL_CODEX
-mkdir -p ~/.local/share/codex
+mkdir -v -p ~/.local/share/codex | sed 's/^/[xndv] /'
 
 # Workaround opencode's re-creation of file(s) that break stow symlinks
 F=~/.config/opencode/antigravity-accounts.json && test ! -L ${F} && rm -f ${F}
 
 # ensure files exist for proper stow'ing
 D="${XNDV_DIR}/conf.local/.config/opencode" && mkdir -p ${D} && touch ${D}/antigravity-accounts.json # ~INSTALL_OPENCODE
-# create dirs so stow symlinks files and not dirs
-mkdir -v -p \
-  ~/.claude \
-  | sed 's/^/[xndv] /'
+# # create dirs so stow symlinks files and not dirs
+# mkdir -v -p \
+#   ~/somedir \
+#   | sed 's/^/[xndv] /'
 # stow the local conf files
 stow \
   --ignore=xndv \

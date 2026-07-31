@@ -772,7 +772,6 @@ RUN \
   done \
   # create dirs so stow symlinks files and not dirs
   && mkdir -p \
-    /home/${_USER}/.claude/hooks \
     /home/${_USER}/.config/btop \
     /home/${_USER}/.config/herdr \
     /home/${_USER}/.config/kitty \
