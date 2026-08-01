@@ -6,7 +6,8 @@ CONTAINER_PREFIX="xndv"
 XNDV_HOST_DATA="${HOME}/.local/share/xndv"
 XNDV_USER="xndv"
 HERDR_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/herdr"
-HERDR_CONTAINER_CONFIG_DIR="/home/${XNDV_USER}/.config/herdr"
+HERDR_CONTAINER_CONFIG_DIR="/home/${XNDV_USER}/.config/herdr-host"
+HERDR_CONTAINER_CONFIG_DIR_LEGACY="/home/${XNDV_USER}/.config/herdr"
 HERDR_SOCKET_FILE="${HERDR_CONFIG_DIR}/herdr.sock"
 
 while [[ $# -gt 0 ]]; do
@@ -36,28 +37,34 @@ ui() {
 
 append_herdr_env() {
   local -n out_args="$1"
-  local enabled="${2:-1}"
+  local container_config_dir="${2:-$HERDR_CONTAINER_CONFIG_DIR}"
   local herdr_socket_path herdr_client_socket_path
 
-  [[ "$enabled" == "1" ]] || return 0
   [[ "${HERDR_ENV:-}" == "1" ]] || return 0
   [[ -n "${HERDR_PANE_ID:-}" && -n "${HERDR_SOCKET_PATH:-}" ]] || return 0
 
-  herdr_socket_path="${HERDR_SOCKET_PATH/#${HERDR_CONFIG_DIR}/${HERDR_CONTAINER_CONFIG_DIR}}"
+  herdr_socket_path="${HERDR_SOCKET_PATH/#${HERDR_CONFIG_DIR}/${container_config_dir}}"
   out_args+=(--env "HERDR_ENV=${HERDR_ENV}")
   out_args+=(--env "HERDR_PANE_ID=${HERDR_PANE_ID}")
   out_args+=(--env "HERDR_SOCKET_PATH=${herdr_socket_path}")
+  out_args+=(--env "HERDR_SPLITS_CONFIG=${container_config_dir}/plugins/config/herdr-splits/herdr-splits.conf")
 
   if [[ -n "${HERDR_CLIENT_SOCKET_PATH:-}" ]]; then
-    herdr_client_socket_path="${HERDR_CLIENT_SOCKET_PATH/#${HERDR_CONFIG_DIR}/${HERDR_CONTAINER_CONFIG_DIR}}"
+    herdr_client_socket_path="${HERDR_CLIENT_SOCKET_PATH/#${HERDR_CONFIG_DIR}/${container_config_dir}}"
     out_args+=(--env "HERDR_CLIENT_SOCKET_PATH=${herdr_client_socket_path}")
   fi
 }
 
-container_has_herdr_mount() {
+container_herdr_config_dir() {
   local container="$1"
-  docker inspect -f '{{range .Mounts}}{{println .Destination}}{{end}}' "$container" 2>/dev/null |
-    grep -Fxq "$HERDR_CONTAINER_CONFIG_DIR"
+  local destinations
+
+  destinations=$(docker inspect \
+    -f '{{range .Mounts}}{{println .Destination}}{{end}}' \
+    "$container" 2>/dev/null) || return 1
+  grep -Fxq "$HERDR_CONTAINER_CONFIG_DIR" <<<"$destinations" && echo "$HERDR_CONTAINER_CONFIG_DIR" && return
+  grep -Fxq "$HERDR_CONTAINER_CONFIG_DIR_LEGACY" <<<"$destinations" \
+    && echo "$HERDR_CONTAINER_CONFIG_DIR_LEGACY"
 }
 
 # TTY: show command and prompt; GUI: auto-run
@@ -266,7 +273,8 @@ cmd_launch() {
   if [[ "$sel" != "+ New Instance" ]]; then
     container="${sel##* }"
     exec_args=()
-    container_has_herdr_mount "$container" && append_herdr_env exec_args
+    herdr_container_config_dir=$(container_herdr_config_dir "$container") \
+      && append_herdr_env exec_args "$herdr_container_config_dir"
     echo "[xndv] docker exec into container $container"
     exec docker exec -it "${exec_args[@]}" "$container" sh -c 'bash || sh'
   fi
@@ -381,7 +389,7 @@ cmd_launch() {
   for env_var in "${ENV[@]}"; do
     env_args+=(--env "$env_var")
   done
-  append_herdr_env env_args "$herdr_mount_selected"
+  [[ "$herdr_mount_selected" == "1" ]] && append_herdr_env env_args
   SHELL_CMD="${RUNNER_SHELL[$RUNNER]}"
   ARGS_DOCKER+=(--label xndv.mode=$mode)
   [[ "$RUNNER" == "x11docker" ]] &&
