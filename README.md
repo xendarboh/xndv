@@ -106,6 +106,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
     - [avante.nvim](https://github.com/yetone/avante.nvim): Use your Neovim like using Cursor AI IDE!
     - [better-escape.nvim](https://github.com/max397574/better-escape.nvim): Escape from insert mode without delay
     - [gruvbox.nvim](https://github.com/ellisonleao/gruvbox.nvim): Gruvbox colorscheme
+    - [herdr-splits.nvim](https://github.com/lmilojevicc/herdr-splits.nvim): Seamless navigation and resizing between Neovim and herdr
     - [markdown-preview.nvim](https://github.com/iamcco/markdown-preview.nvim): Markdown preview plugin
     - [noir.nvim](https://github.com/noir-lang/noir-nvim): Syntax highlighting and LSP for Noir
     - [nx.nvim](https://github.com/Equilibris/nx.nvim): NX console features for Neovim
@@ -125,6 +126,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
 - [Codex](https://github.com/openai/codex): Lightweight coding agent that runs in your terminal _(INSTALL_CODEX)_
 - [Docker Model Runner](https://docs.docker.com/ai/model-runner/) (DMR): Run LLMs locally via Docker
 - [herdr](https://github.com/ogulcancelik/herdr): Agent multiplexer that lives in your terminal
+  - [herdr-splits.nvim](https://github.com/lmilojevicc/herdr-splits.nvim): Seamless navigation and resizing between Neovim and herdr
 - [LiteLLM](https://github.com/BerriAI/litellm): Unified LLM proxy — 100+ providers, one endpoint, cost tracking, caching
 - [llmfit](https://github.com/AlexsJones/llmfit): Score and rank LLMs by hardware fit (RAM, CPU, GPU)
 - [Oh My Pi](https://github.com/can1357/oh-my-pi): Batteries-included terminal coding agent with LSP, debugger, and subagents _(INSTALL_OMP)_
