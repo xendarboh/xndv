@@ -345,6 +345,28 @@ Notable files in `conf.local/`, for example:
 | `.wakatime.cfg`          | Wakatime/Wakapi config                              |
 | `.aws/`                  | AWS credentials                                     |
 
+### herdr
+
+The image installs the latest stable Herdr with some herdr plugins. Run the same installer directly on a host when the Herdr server lives outside xndv:
+
+```sh
+./build/install.d/herdr.sh
+```
+
+Configuration remains Stow-managed. When launched from a host Herdr pane, `bin.host/xndv` mounts the host
+Herdr directory at `~/.config/herdr-host` inside the container and forwards its socket, pane, client, and
+herdr-splits environment. Use Herdr's foreground-process hint when xndv wraps an agent, for example:
+
+```sh
+HERDR_AGENT=codex ./bin.host/xndv
+```
+
+Remote clients should use the server's plugin-action keybindings:
+
+```sh
+herdr --remote <host> --remote-keybindings server
+```
+
 ### Git Config
 
 Include xndv's git config conditionally:
