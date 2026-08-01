@@ -673,12 +673,6 @@ RUN \
     bun install -g @oh-my-pi/pi-coding-agent \
   ; fi
 
-# install herdr
-RUN \
-  --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \
-  curl -fsSL https://herdr.dev/install.sh -o /dlu/herdr-install.sh \
-  && sh /dlu/herdr-install.sh
-
 # install extra bash things
 RUN mkdir ~/.bash
 
@@ -788,6 +782,9 @@ RUN \
 
 # source bash configuration
 RUN /bin/echo -e "\ntest -f ~/.bash_xndv && . ~/.bash_xndv\n" >> .bashrc
+
+# install herdr and its plugins
+RUN ${XNDV_DIR}/build/install.d/herdr.sh
 
 # install tinty, sync schemes/templates, and apply a theme
 # tinty expects a ~/.config/ file, so run this after stow
