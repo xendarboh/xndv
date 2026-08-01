@@ -789,16 +789,6 @@ RUN \
 # source bash configuration
 RUN /bin/echo -e "\ntest -f ~/.bash_xndv && . ~/.bash_xndv\n" >> .bashrc
 
-# install smart-splits Kitty multiplexer support
-# Kitty conf expects the kittens so don't wait for nvim lazy load
-RUN cd /tmp \
-  && git clone \
-    --depth 1 \
-    https://github.com/mrjones2014/smart-splits.nvim.git \
-  && cd smart-splits.nvim \
-  && ./kitty/install-kittens.bash \
-  && rm -rf /tmp/smart-splits.nvim
-
 # install tinty, sync schemes/templates, and apply a theme
 # tinty expects a ~/.config/ file, so run this after stow
 ARG OPTIONS_THEME

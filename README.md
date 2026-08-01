@@ -109,7 +109,6 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
     - [markdown-preview.nvim](https://github.com/iamcco/markdown-preview.nvim): Markdown preview plugin
     - [noir.nvim](https://github.com/noir-lang/noir-nvim): Syntax highlighting and LSP for Noir
     - [nx.nvim](https://github.com/Equilibris/nx.nvim): NX console features for Neovim
-    - [smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim): Seamless navigation and resizing
     - [tinted-nvim](https://github.com/tinted-theming/tinted-nvim): Tinty colorscheme sync with native fallback
     - [tokyonight.nvim](https://github.com/folke/tokyonight.nvim): Tokyo Night colorscheme
     - [tuicr.nvim](https://github.com/xendarboh/tuicr.nvim): Neovim integration for tuicr
