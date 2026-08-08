@@ -130,12 +130,30 @@ install_host() {
   install_herdr
 
   say "extracting plugin bundle from ${XNDV_IMAGE}"
-  rm -rf "$BUNDLE_DIR"
-  mkdir -p "$BUNDLE_DIR"
+  local tarball status=0
+  tarball=$(mktemp)
+
+  # Extract to a file rather than piping straight into tar: a failure inside the
+  # container otherwise surfaces as an unrelated gzip error on a truncated
+  # stream, hiding what actually went wrong.
   # --rm so nothing is left behind on a disk-constrained host; XNDV_DIR is an
   # image ENV, and the explicit path avoids sourcing any shell rc onto stdout
-  docker run --rm "$XNDV_IMAGE" sh -c 'exec "$XNDV_DIR/bin/x-herdr-bundle"' |
-    tar -C "$BUNDLE_DIR" -xzf -
+  docker run --rm "$XNDV_IMAGE" sh -c 'exec "$XNDV_DIR/bin/x-herdr-bundle"' \
+    >"$tarball" || status=$?
+
+  if ((status != 0)) || [[ ! -s "$tarball" ]]; then
+    rm -f "$tarball"
+    say "bundle extraction failed (exit ${status})" >&2
+    say "if ${XNDV_IMAGE} predates bin/x-herdr-bundle, rebuild it. check with:" >&2
+    say "  docker run --rm ${XNDV_IMAGE} ls -l \"\$XNDV_DIR/bin/x-herdr-bundle\"" >&2
+    exit 1
+  fi
+
+  # only replace a working bundle once we have a good one in hand
+  rm -rf "$BUNDLE_DIR"
+  mkdir -p "$BUNDLE_DIR"
+  tar -C "$BUNDLE_DIR" -xzf "$tarball"
+  rm -f "$tarball"
 
   check_abi
 
