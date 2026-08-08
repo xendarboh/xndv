@@ -103,10 +103,12 @@ install_container() {
 check_abi() {
   local bundle_glibc host_glibc
   bundle_glibc=$(awk '/GLIBC|GNU libc/ {print $NF}' "$BUNDLE_DIR/BUNDLE.txt" 2>/dev/null || true)
-  host_glibc=$(ldd --version | head -1 | awk '{print $NF}')
+  # awk over `head -1`: head exits early and its SIGPIPE trips pipefail (see the
+  # same trap in bin/x-herdr-bundle); awk consumes the whole stream
+  host_glibc=$(ldd --version | awk 'NR == 1 {print $NF}')
 
   [[ -n "$bundle_glibc" ]] || return 0
-  [[ "$(printf '%s\n%s\n' "$bundle_glibc" "$host_glibc" | sort -V | head -1)" == "$bundle_glibc" ]] && return 0
+  [[ "$(printf '%s\n%s\n' "$bundle_glibc" "$host_glibc" | sort -V | awk 'NR == 1')" == "$bundle_glibc" ]] && return 0
 
   cat >&2 <<EOF
 [herdr] ABI mismatch: plugins were built against glibc ${bundle_glibc},
