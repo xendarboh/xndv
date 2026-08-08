@@ -24,6 +24,9 @@ build-tty-sys: build-tty ## build tty+sysbox docker image
 rebuild-tty: ## (re)build tty-only docker image with --no-cache --pull
 	time $(COMPOSE_BUILD) build --no-cache --pull xen-dev
 
+rebuild-tty-sys: build-tty ## (re)build tty+sysbox docker image with --no-cache --pull
+	time $(COMPOSE_BUILD) build xen-sys --no-cache --pull xen-dev
+
 install-x11docker: ## install or update x11docker and pull xserver image
 	curl -fsSL https://raw.githubusercontent.com/mviereck/x11docker/master/x11docker | sudo bash -s -- --update
 	docker pull x11docker/xserver
