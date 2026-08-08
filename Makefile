@@ -9,7 +9,7 @@ COMPOSE_BUILD := docker compose --profile build
 COMPOSE_MODELS := docker compose --profile models
 COMPOSE_GATEWAY := docker compose --profile gateway
 
-.PHONY: help build-tty rebuild-tty install-x11docker fetch-nvidia-driver build retag rebuild refresh models-up models-down models-logs models-status gateway-up gateway-down gateway-logs gateway-status gateway-login gateway-quota
+.PHONY: help build-tty rebuild-tty install-herdr install-x11docker fetch-nvidia-driver build retag rebuild refresh models-up models-down models-logs models-status gateway-up gateway-down gateway-logs gateway-status gateway-login gateway-quota
 
 # https://blog.testdouble.com/posts/2017-04-17-makefile-usability-tips/#step-3-parse-annotations
 help: ## print this help message with some nifty mojo
@@ -26,6 +26,9 @@ rebuild-tty: ## (re)build tty-only docker image with --no-cache --pull
 
 rebuild-tty-sys: build-tty ## (re)build tty+sysbox docker image with --no-cache --pull
 	time $(COMPOSE_BUILD) build xen-sys --no-cache --pull xen-dev
+
+install-herdr: ## install herdr on this host with plugins prebuilt in the xndv image
+	./build/install.d/herdr.sh
 
 install-x11docker: ## install or update x11docker and pull xserver image
 	curl -fsSL https://raw.githubusercontent.com/mviereck/x11docker/master/x11docker | sudo bash -s -- --update

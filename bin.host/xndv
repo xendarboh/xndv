@@ -413,6 +413,7 @@ DIRS=(
   "cache:${XNDV_HOST_DATA}/xndv/ai/open-webui:Open WebUI data"
   "cache:${XNDV_HOST_DATA}/xndv/aztec:Aztec versioned binaries"
   "cache:${XNDV_HOST_DATA}/xndv/cache:Container ~/.cache"
+  "cache:${XNDV_HOST_DATA}/xndv/herdr-plugins:Host herdr plugins (restore: make install-herdr)"
   "cache:${XNDV_HOST_DATA}/xndv/mcp/aztec:Aztec MCP server data"
   "cache:${XNDV_HOST_DATA}/xndv/mcp/noir:Noir MCP repos"
   "cache:${XNDV_HOST_DATA}/xndv/sysbox/docker:Sysbox /var/lib/docker storage"
