@@ -30,6 +30,12 @@ rows = [
 kitty_graphics = true
 
 [[keys.command]]
+key = "prefix+alt+p"
+type = "plugin_action"
+command = "herdr-spreader.apply"
+description = "Apply herdr-spreader"
+
+[[keys.command]]
 key = "prefix+alt+s"
 type = "plugin_action"
 command = "ez-corp.git-status.status-toggle"
