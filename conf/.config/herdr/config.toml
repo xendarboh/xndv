@@ -33,38 +33,46 @@ kitty_graphics = true
 key = "ctrl+h"
 type = "plugin_action"
 command = "herdr-splits.nav-left"
+description = "Navigate left"
 
 [[keys.command]]
 key = "ctrl+j"
 type = "plugin_action"
 command = "herdr-splits.nav-down"
+description = "Navigate down"
 
 [[keys.command]]
 key = "ctrl+k"
 type = "plugin_action"
 command = "herdr-splits.nav-up"
+description = "Navigate up"
 
 [[keys.command]]
 key = "ctrl+l"
 type = "plugin_action"
 command = "herdr-splits.nav-right"
+description = "Navigate right"
 
 [[keys.command]]
 key = "alt+h"
 type = "plugin_action"
 command = "herdr-splits.resize-left"
+description = "Resize left"
 
 [[keys.command]]
 key = "alt+j"
 type = "plugin_action"
 command = "herdr-splits.resize-down"
+description = "Resize down"
 
 [[keys.command]]
 key = "alt+k"
 type = "plugin_action"
 command = "herdr-splits.resize-up"
+description = "Resize up"
 
 [[keys.command]]
 key = "alt+l"
 type = "plugin_action"
 command = "herdr-splits.resize-right"
+description = "Resize right"
