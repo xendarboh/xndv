@@ -51,16 +51,6 @@ for dir in "$PLUGIN_SRC"/*/; do
   ' "${dir}herdr-plugin.toml" >"$stage/$name/herdr-plugin.toml"
 done
 
-# let the host verify the plugin binaries will actually load before linking.
-# capture rather than `ldd --version | head -1`: head exits after one line and
-# the SIGPIPE it sends back trips pipefail, killing this script with 141 before
-# it ever writes the tarball. Racy — it depends on ldd outrunning head.
-ldd_version=$(ldd --version)
-{
-  echo "${ldd_version%%$'\n'*}"
-  echo "built: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-} >"$stage/BUNDLE.txt"
-
 tar -C "$stage" -czf - .
 
 # vim ft=bash

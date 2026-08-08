@@ -97,26 +97,21 @@ install_container() {
 # HOST
 #---------------------------------------------------------------------------
 
-# The plugin binaries link libc/libgcc and nothing else, so they run on any host
-# at or above the glibc they were built against and fail to start below it.
-# Catch that here rather than as a silent plugin failure later.
-check_abi() {
-  local bundle_glibc host_glibc
-  bundle_glibc=$(awk '/GLIBC|GNU libc/ {print $NF}' "$BUNDLE_DIR/BUNDLE.txt" 2>/dev/null || true)
-  # awk over `head -1`: head exits early and its SIGPIPE trips pipefail (see the
-  # same trap in bin/x-herdr-bundle); awk consumes the whole stream
-  host_glibc=$(ldd --version | awk 'NR == 1 {print $NF}')
-
-  [[ -n "$bundle_glibc" ]] || return 0
-  [[ "$(printf '%s\n%s\n' "$bundle_glibc" "$host_glibc" | sort -V | awk 'NR == 1')" == "$bundle_glibc" ]] && return 0
-
-  cat >&2 <<EOF
-[herdr] ABI mismatch: plugins were built against glibc ${bundle_glibc},
-        this host has ${host_glibc}. The plugin binaries will not start.
-        Rebuild the image's plugins against x86_64-unknown-linux-musl, or
-        install herdr without plugins on this host.
-EOF
-  exit 1
+# A plugin binary the host loader can't resolve — image glibc newer than the
+# host's is the likely way — fails at action time, where herdr reports only that
+# the action failed. That is a long way from the cause, so prove each one
+# resolves up front. ldd exercises the real loader without running the program.
+check_binaries() {
+  local bin out
+  for bin in "$BUNDLE_DIR"/*/target/release/*; do
+    [[ -x "$bin" ]] || continue
+    out=$(ldd "$bin" 2>&1) || true
+    [[ "$out" == *"not found"* ]] || continue
+    say "$(basename "$bin") cannot load on this host:" >&2
+    say "  ${out}" >&2
+    say "rebuild the image's plugins against x86_64-unknown-linux-musl" >&2
+    exit 1
+  done
 }
 
 install_host() {
@@ -157,7 +152,7 @@ install_host() {
   tar -C "$BUNDLE_DIR" -xzf "$tarball"
   rm -f "$tarball"
 
-  check_abi
+  check_binaries
 
   local dir
   for dir in "$BUNDLE_DIR"/*/; do
