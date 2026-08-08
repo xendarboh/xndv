@@ -1,0 +1,4 @@
+# mode = "agents-panel"
+mode = "sidebar"
+interval_seconds = 5
+clean_checkmark = false

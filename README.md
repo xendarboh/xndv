@@ -126,6 +126,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
 - [Codex](https://github.com/openai/codex): Lightweight coding agent that runs in your terminal _(INSTALL_CODEX)_
 - [Docker Model Runner](https://docs.docker.com/ai/model-runner/) (DMR): Run LLMs locally via Docker
 - [herdr](https://github.com/ogulcancelik/herdr): Agent multiplexer that lives in your terminal
+  - [herdr-git-status](https://github.com/ezcorp-org/herdr-git-status): Shows each space's git working-tree status in the sidebar
   - [herdr-splits.nvim](https://github.com/lmilojevicc/herdr-splits.nvim): Seamless navigation and resizing between Neovim and herdr
   - [herdr-spreader](https://github.com/yuk1ty/herdr-spreader): Reproduce herdr workspace layouts from declarative YAML files
 - [LiteLLM](https://github.com/BerriAI/litellm): Unified LLM proxy — 100+ providers, one endpoint, cost tracking, caching

@@ -770,7 +770,7 @@ RUN \
   # create dirs so stow symlinks files and not dirs
   && mkdir -p \
     /home/${_USER}/.config/btop \
-    /home/${_USER}/.config/herdr \
+    /home/${_USER}/.config/herdr/plugins/config \
     /home/${_USER}/.config/kitty \
     /home/${_USER}/.config/lazygit \
     /home/${_USER}/.config/opencode \

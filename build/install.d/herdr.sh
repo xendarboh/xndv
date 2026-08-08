@@ -8,6 +8,7 @@ export PATH="$HOME/.local/bin:$PATH"
 # keep plugin build artifacts in their checkouts
 unset CARGO_TARGET_DIR
 
+herdr plugin install ezcorp-org/herdr-git-status --yes
 herdr plugin install lmilojevicc/herdr-splits.nvim --yes
 herdr plugin install yuk1ty/herdr-spreader --yes
 
