@@ -30,6 +30,12 @@ rows = [
 kitty_graphics = true
 
 [[keys.command]]
+key = "prefix+alt+s"
+type = "plugin_action"
+command = "ez-corp.git-status.status-toggle"
+description = "Toggle git status"
+
+[[keys.command]]
 key = "ctrl+h"
 type = "plugin_action"
 command = "herdr-splits.nav-left"
