@@ -546,6 +546,8 @@ RUN \
 # install noir
 # https://noir-lang.org/docs/getting_started_manually
 # NOTE: 2026-07: noirup without -v fails with gzip/tar error, remove explicit version once upstream issue ressolved
+#       this is due to the bb-versions mapping that has drifted behind noir:
+#       https://raw.githubusercontent.com/AztecProtocol/aztec-packages/next/barretenberg/bbup/bb-versions.json
 ARG INSTALL_NOIR=0
 ARG VERSION_NOIR=1.0.0-beta.22
 ENV NARGO_HOME=/home/${_USER}/.nargo
