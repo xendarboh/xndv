@@ -46,9 +46,9 @@ build: ## build docker images
 
 retag: ## tag docker images: latest --> prev
 	-docker rmi xen/sys:prev xen/dev:prev xen/x11:prev
-	docker image tag xen/sys:latest xen/sys:prev
-	docker image tag xen/dev:latest xen/dev:prev
-	docker image tag xen/x11:latest xen/x11:prev
+	-docker image tag xen/dev:latest xen/dev:prev
+	-docker image tag xen/sys:latest xen/sys:prev
+	-docker image tag xen/x11:latest xen/x11:prev
 
 rebuild: ## rebuild docker images (no cache, pull latest base images)
 	time docker pull ${IMAGE_BASE}
