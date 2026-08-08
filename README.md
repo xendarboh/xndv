@@ -127,6 +127,7 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
 - [Docker Model Runner](https://docs.docker.com/ai/model-runner/) (DMR): Run LLMs locally via Docker
 - [herdr](https://github.com/ogulcancelik/herdr): Agent multiplexer that lives in your terminal
   - [herdr-splits.nvim](https://github.com/lmilojevicc/herdr-splits.nvim): Seamless navigation and resizing between Neovim and herdr
+  - [herdr-spreader](https://github.com/yuk1ty/herdr-spreader): Reproduce herdr workspace layouts from declarative YAML files
 - [LiteLLM](https://github.com/BerriAI/litellm): Unified LLM proxy — 100+ providers, one endpoint, cost tracking, caching
 - [llmfit](https://github.com/AlexsJones/llmfit): Score and rank LLMs by hardware fit (RAM, CPU, GPU)
 - [Oh My Pi](https://github.com/can1357/oh-my-pi): Batteries-included terminal coding agent with LSP, debugger, and subagents _(INSTALL_OMP)_

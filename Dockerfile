@@ -786,8 +786,11 @@ RUN \
 # source bash configuration
 RUN /bin/echo -e "\ntest -f ~/.bash_xndv && . ~/.bash_xndv\n" >> .bashrc
 
-# install herdr and its plugins
+# install herdr and some plugins
 RUN ${XNDV_DIR}/build/install.d/herdr.sh
+
+# some herdr plugins provide (or work better with) dedicated commands, install them here
+RUN cargo install --git https://github.com/yuk1ty/herdr-spreader
 
 # install tinty, sync schemes/templates, and apply a theme
 # tinty expects a ~/.config/ file, so run this after stow
