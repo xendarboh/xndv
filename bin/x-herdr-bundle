@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Emit a tar.gz of runtime-only herdr plugin assets to stdout.
+#
+# Run inside an xndv container; consumed on a host by:
+#   build/install.d/herdr.sh   (host mode — see its header)
+#
+# Selects only what plugin commands invoke at runtime: the checkout minus build
+# intermediates, git history and the uninitialised test submodule, plus the
+# release binaries the manifests reference as ./target/release/<bin>. The
+# selection is independent of whether the image was pruned, so this stays correct
+# on an unpruned checkout too.
+#
+# Each manifest's [[build]] stanza is stripped so a host with no rust toolchain
+# can never be asked to compile. `herdr plugin link` does not run build commands
+# today — this keeps that true if it ever changes.
+set -euo pipefail
+
+PLUGIN_SRC="${HOME}/.config/herdr/plugins/github"
+
+[[ -d "$PLUGIN_SRC" ]] || {
+  echo "x-herdr-bundle: no plugins at $PLUGIN_SRC" >&2
+  exit 1
+}
+
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+
+for dir in "$PLUGIN_SRC"/*/; do
+  [[ -f "${dir}herdr-plugin.toml" ]] || continue
+  name=$(basename "$dir")
+
+  # .git is install-time provenance (plugins.json already records the commit);
+  # deps/ is an uninitialised test submodule; target/ is build intermediates
+  rsync -a --exclude='/target/' --exclude='/.git/' --exclude='/deps/' "$dir" "$stage/$name/"
+
+  # add back only the binaries the manifests invoke — top-level executables in
+  # target/release; everything below it is intermediate
+  if [[ -d "${dir}target/release" ]]; then
+    mkdir -p "$stage/$name/target/release"
+    find "${dir}target/release" -maxdepth 1 -type f -executable \
+      -exec cp -p {} "$stage/$name/target/release/" \;
+  fi
+
+  # drop [[build]] up to the next blank line or table header, preserving the
+  # comments that document the stanzas below it
+  awk '
+    /^\[\[build\]\]/ { skip = 1; next }
+    skip && (/^$/ || /^\[/) { skip = 0 }
+    skip { next }
+    { print }
+  ' "${dir}herdr-plugin.toml" >"$stage/$name/herdr-plugin.toml"
+done
+
+tar -C "$stage" -czf - .
+
+# vim ft=bash

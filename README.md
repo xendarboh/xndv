@@ -351,11 +351,16 @@ Notable files in `conf.local/`, for example:
 
 ### herdr
 
-The image installs the latest stable Herdr with some herdr plugins. Run the same installer directly on a host when the Herdr server lives outside xndv:
+The image installs the latest stable Herdr with some herdr plugins. Run the same installer directly on a
+host when the Herdr server lives outside xndv:
 
 ```sh
-./build/install.d/herdr.sh
+make install-herdr       # or: ./build/install.d/herdr.sh
 ```
+
+On a host this installs Herdr (a static binary — no toolchain) and links the plugin binaries already built
+in the `xen/dev` image, extracted via a throwaway container to minimize host dependencies. Re-run after rebuilding the image to
+pick up newer plugins.
 
 Configuration remains Stow-managed. When launched from a host Herdr pane, `bin.host/xndv` mounts the host
 Herdr directory at `~/.config/herdr-host` inside the container and forwards its socket, pane, client, and

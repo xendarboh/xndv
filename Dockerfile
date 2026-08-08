@@ -786,12 +786,6 @@ RUN \
 # source bash configuration
 RUN /bin/echo -e "\ntest -f ~/.bash_xndv && . ~/.bash_xndv\n" >> .bashrc
 
-# install herdr and some plugins
-RUN ${XNDV_DIR}/build/install.d/herdr.sh
-
-# some herdr plugins provide (or work better with) dedicated commands, install them here
-RUN cargo install --git https://github.com/yuk1ty/herdr-spreader
-
 # install tinty, sync schemes/templates, and apply a theme
 # tinty expects a ~/.config/ file, so run this after stow
 ARG OPTIONS_THEME
@@ -808,6 +802,11 @@ RUN \
   && tinty apply ${OPTIONS_THEME} \
   # relocate tinty data-dir as ~/.local/share/ is commonly volume-mapped for persistence
   && mv ~/.local/share/tinted-theming/tinty ~/.tinty
+
+# install herdr and some plugins
+# the script prunes plugin build intermediates and symlinks the herdr-spreader
+# CLI to the plugin's own binary, all within this RUN so the layer stays small
+RUN ${XNDV_DIR}/build/install.d/herdr.sh
 
 # set nvim distribution
 ARG OPTIONS_NVIM_APPNAME

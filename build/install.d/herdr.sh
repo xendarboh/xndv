@@ -1,17 +1,173 @@
 #!/usr/bin/env bash
+# Install herdr and its plugins. The mode follows the environment:
+#
+#   container — install herdr, build plugins from source, then prune the build
+#               intermediates. XNDV_DIR is an image ENV set only inside xndv, and
+#               the Dockerfile's RUN resolves this script through that same var,
+#               so it can never be absent there.
+#   host      — install herdr, then link plugin binaries prebuilt in the xndv
+#               image. No rust toolchain on the host.
+#
+# To force host mode from inside a container (sysbox docker-in-docker), unset the
+# marker for the call: XNDV_DIR= ./build/install.d/herdr.sh
+#
+# herdr itself is a static binary the upstream installer downloads, so neither
+# mode needs a compiler for herdr — only the plugins ever did.
 set -euo pipefail
 
-curl -fsSL https://herdr.dev/install.sh | sh
+[[ -n "${XNDV_DIR:-}" ]] && MODE=container || MODE=host
 
-export PATH="$HOME/.local/bin:$PATH"
+REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+XNDV_IMAGE="${XNDV_IMAGE:-xen/dev}"
+BUNDLE_DIR="${HOME}/.local/share/xndv/xndv/herdr-plugins"
+PLUGIN_SRC="${HOME}/.config/herdr/plugins/github"
 
-# keep plugin build artifacts in their checkouts
-unset CARGO_TARGET_DIR
+PLUGINS=(
+  ezcorp-org/herdr-git-status
+  lmilojevicc/herdr-splits.nvim
+  yuk1ty/herdr-spreader
+)
 
-herdr plugin install ezcorp-org/herdr-git-status --yes
-herdr plugin install lmilojevicc/herdr-splits.nvim --yes
-herdr plugin install yuk1ty/herdr-spreader --yes
+say() { echo "[herdr] $*"; }
 
-# ensure custom config when this script is run on host
-# this is redundant for xndv, which gets the config via stow
-ln -sfv ~/src/xndv/conf/.config/herdr/config.toml ~/.config/herdr/config.toml
+install_herdr() {
+  curl -fsSL https://herdr.dev/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+}
+
+link_config() {
+  # ensure custom config when this script is run on host
+  mkdir -p ~/.config/herdr
+  ln -sfv "${REPO_DIR}/conf/.config/herdr/config.toml" ~/.config/herdr/config.toml
+
+  # plugin config
+  ln -sfv "${REPO_DIR}/conf.local/.config/herdr/plugins/config/herdr-spreader/config.yaml" ~/.config/herdr/plugins/config/herdr-spreader/config.yaml
+  ln -sfv "${REPO_DIR}/conf/.config/herdr/plugins/config/ez-corp.git-status/config.toml" ~/.config/herdr/plugins/config/ez-corp.git-status/config.toml
+}
+
+#---------------------------------------------------------------------------
+# CONTAINER
+#---------------------------------------------------------------------------
+
+# Plugin manifests invoke ./target/release/<bin> relative to the plugin root, so
+# the binary must live in the checkout — but the ~119M of intermediates around it
+# must not reach the layer. Pruning here (not in a later RUN) is what makes the
+# image actually smaller; a subsequent RUN would only mask the bytes.
+prune_plugins() {
+  local dir keep
+  for dir in "$PLUGIN_SRC"/*/; do
+    [[ -d "${dir}target/release" ]] || continue
+    keep=$(mktemp -d)
+    find "${dir}target/release" -maxdepth 1 -type f -executable -exec cp -p {} "$keep/" \;
+    rm -rf "${dir}target"
+    mkdir -p "${dir}target/release"
+    cp -a "$keep"/. "${dir}target/release/"
+    rm -rf "$keep"
+    say "pruned $(basename "$dir") -> $(du -sh "$dir" | cut -f1)"
+  done
+}
+
+install_container() {
+  install_herdr
+
+  # keep plugin build artifacts in their checkouts
+  unset CARGO_TARGET_DIR
+
+  local p
+  for p in "${PLUGINS[@]}"; do
+    herdr plugin install "$p" --yes
+  done
+
+  prune_plugins
+
+  # herdr-spreader also ships a CLI. Symlink the plugin's own binary rather than
+  # `cargo install`-ing the crate a second time: that built the same commit into
+  # a separate target dir (~77M of intermediates baked into the layer, since that
+  # RUN had no cache mount) and let the CLI drift from the pinned plugin action.
+  local spreader
+  spreader=$(echo "$PLUGIN_SRC"/herdr-spreader-*/target/release/herdr-spreader)
+  if [[ -x "$spreader" ]]; then
+    mkdir -p ~/.local/bin
+    ln -sfv "$spreader" ~/.local/bin/herdr-spreader
+  else
+    say "WARNING: herdr-spreader binary not found; CLI unavailable" >&2
+  fi
+}
+
+#---------------------------------------------------------------------------
+# HOST
+#---------------------------------------------------------------------------
+
+# A plugin binary the host loader can't resolve — image glibc newer than the
+# host's is the likely way — fails at action time, where herdr reports only that
+# the action failed. That is a long way from the cause, so prove each one
+# resolves up front. ldd exercises the real loader without running the program.
+check_binaries() {
+  local bin out
+  for bin in "$BUNDLE_DIR"/*/target/release/*; do
+    [[ -x "$bin" ]] || continue
+    out=$(ldd "$bin" 2>&1) || true
+    [[ "$out" == *"not found"* ]] || continue
+    say "$(basename "$bin") cannot load on this host:" >&2
+    say "  ${out}" >&2
+    say "rebuild the image's plugins against x86_64-unknown-linux-musl" >&2
+    exit 1
+  done
+}
+
+install_host() {
+  command -v docker >/dev/null || {
+    say "docker required to extract the plugin bundle from ${XNDV_IMAGE}" >&2
+    exit 1
+  }
+  docker image inspect "$XNDV_IMAGE" &>/dev/null || {
+    say "image ${XNDV_IMAGE} not found — build it first (make build-tty)" >&2
+    exit 1
+  }
+
+  install_herdr
+
+  say "extracting plugin bundle from ${XNDV_IMAGE}"
+  local tarball status=0
+  tarball=$(mktemp)
+
+  # Extract to a file rather than piping straight into tar: a failure inside the
+  # container otherwise surfaces as an unrelated gzip error on a truncated
+  # stream, hiding what actually went wrong.
+  # --rm so nothing is left behind on a disk-constrained host; XNDV_DIR is an
+  # image ENV, and the explicit path avoids sourcing any shell rc onto stdout
+  docker run --rm "$XNDV_IMAGE" sh -c 'exec "$XNDV_DIR/bin/x-herdr-bundle"' \
+    >"$tarball" || status=$?
+
+  if ((status != 0)) || [[ ! -s "$tarball" ]]; then
+    rm -f "$tarball"
+    say "bundle extraction failed (exit ${status})" >&2
+    say "if ${XNDV_IMAGE} predates bin/x-herdr-bundle, rebuild it. check with:" >&2
+    say "  docker run --rm ${XNDV_IMAGE} ls -l \"\$XNDV_DIR/bin/x-herdr-bundle\"" >&2
+    exit 1
+  fi
+
+  # only replace a working bundle once we have a good one in hand
+  rm -rf "$BUNDLE_DIR"
+  mkdir -p "$BUNDLE_DIR"
+  tar -C "$BUNDLE_DIR" -xzf "$tarball"
+  rm -f "$tarball"
+
+  check_binaries
+
+  local dir
+  for dir in "$BUNDLE_DIR"/*/; do
+    [[ -f "${dir}herdr-plugin.toml" ]] || continue
+    herdr plugin link "$dir" --enabled >/dev/null
+    say "linked $(basename "$dir")"
+  done
+
+  link_config
+
+  say "done — $(du -sh "$BUNDLE_DIR" | cut -f1) in ${BUNDLE_DIR}"
+  say "restart herdr (or: herdr update --handoff) to fire plugin startup hooks"
+}
+
+"install_${MODE}"
+
+# vim ft=bash
