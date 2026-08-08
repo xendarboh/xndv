@@ -21,7 +21,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Cache downloaded .deb files to speed up repeated builds
 RUN rm -f /etc/apt/apt.conf.d/docker-clean \
-  && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+  && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+  && echo 'APT::Update::Error-Mode "any";' > /etc/apt/apt.conf.d/update-error-mode
 
 # use bash for RUN commands
 SHELL ["/bin/bash", "--login", "-e", "-o", "pipefail", "-c"]
