@@ -149,6 +149,32 @@ RUN \
     pinentry-gtk2 \
   && true
 
+# Sound clients only — the daemon runs on the host and x11docker wires the
+# container to it (see AUDIO_MODE in .env-example). libpulse0, libasound2 and
+# libpipewire-0.3-0 already come in above, so this adds the tools and the
+# ALSA -> PulseAudio bridge on top.
+ARG ENABLE_AUDIO=0
+ENV ENABLE_AUDIO=${ENABLE_AUDIO}
+RUN \
+  --mount=type=cache,id=apt-archives,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,id=apt-lists,target=/var/lib/apt,sharing=locked \
+  if [ "${ENABLE_AUDIO}" = "1" ]; then \
+    apt update \
+    && apt install --no-install-recommends -y -q \
+      alsa-utils \
+      libasound2-plugins \
+      libcanberra-pulse \
+      pavucontrol \
+      pulseaudio-utils \
+      sound-theme-freedesktop \
+    # route bare-ALSA apps through the sound server, falling back to the
+    # hardware device when there is none (i.e. under --alsa)
+    && printf '%s\n' \
+      'pcm.!default { type pulse fallback "sysdefault" }' \
+      'ctl.!default { type pulse fallback "sysdefault" }' \
+      > /etc/asound.conf \
+  ; fi
+
 # https://sw.kovidgoyal.net/kitty/binary/#desktop-integration-on-linux
 ENV DEST=/usr/local
 RUN \

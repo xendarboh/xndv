@@ -42,6 +42,7 @@ make build
 | [x11docker](https://github.com/mviereck/x11docker#installation)                             | `max`, `min`, `sys` (x11) | Desktop/GUI runner only; not needed for `tty` mode or headless (`sys` on a server)                                                                  |
 | [sysbox](https://github.com/nestybox/sysbox/blob/master/docs/user-guide/install-package.md) | `sys` mode                | Recommended for Docker-in-Docker                                                                                                                    |
 | rofi / dmenu / fzf                                                                          | Launcher                  | Any one; detected in order                                                                                                                          |
+| `pactl` (`pulseaudio-utils`) or PipeWire ≥ 1.4                                              | Audio (optional)          | Host sound server + client tool x11docker probes; see [Audio](#audio)                                                                               |
 | [Nerd Font](https://github.com/ryanoasis/nerd-fonts#font-installation)                      | `tty` mode                | Container provides fonts for GUI modes                                                                                                              |
 | [Docker Model Runner](https://docs.docker.com/ai/model-runner/)                             | Local AI (optional)       | GPU-accelerated inference via [nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html), etc |
 
@@ -88,6 +89,39 @@ The `sys` mode uses [sysbox](https://github.com/nestybox/sysbox) for secure, roo
 **Tradeoffs**: No direct GPU (uses `--gpu` fallback under x11), bridged networking (no `--network=host`).
 
 **Persistence**: Inner Docker data stored at `~/.local/share/xndv/xndv/sysbox/docker`.
+
+### Audio
+
+Off by default. Sound is provided by the host's sound server — the container only ever runs clients — and x11docker does the wiring, so audio applies to the `x11` runner (`max`, `min`, `sys·x11`), not to headless `tty`.
+
+```sh
+# in .env
+ENABLE_AUDIO=1
+
+make build          # adds sound clients to the xen/x11 image
+./bin.host/xndv     # launcher adds the sound option to x11docker
+./test/audio.sh     # from inside the container: verify and play a sound
+```
+
+`AUDIO_MODE` names an [x11docker](https://github.com/mviereck/x11docker) sound option, written without its leading dashes. The default `auto` probes the host and picks the first that fits:
+
+| `AUDIO_MODE`        | What it shares                                       | `auto` selects it when                                        |
+| :------------------ | :--------------------------------------------------- | :------------------------------------------------------------ |
+| `pipewire`          | Sandboxed PipeWire socket minted by `pw-container`   | Host runs PipeWire ≥ 1.4                                      |
+| `pulseaudio=host`   | The host's existing PulseAudio/pipewire-pulse socket | Host runs `pipewire-pulse`, which cannot mint a second socket |
+| `pulseaudio=socket` | A dedicated socket minted via `pactl`                | Host runs classic PulseAudio                                  |
+| `pulseaudio=tcp`    | A PulseAudio TCP port                                | `sys` mode — sysbox cannot reach the host user's runtime dir  |
+| `alsa[=CARD]`       | `/dev/snd` directly, bypassing the host sound server | Nothing else is available                                     |
+
+Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `aplay -l`).
+
+**Caveats**:
+
+- Every mode lets container applications capture audio output and microphone input — this is a deliberate loosening of isolation, which is why it is opt-in.
+- `alsa` bypasses the host sound server, so host and container will fight over the device. Prefer a `pulseaudio` or `pipewire` mode whenever a sound server is running.
+- Ubuntu 24.04 ships PipeWire 1.0, which has no `pw-container`; `--pipewire` needs 25.04 or newer. `pulseaudio=host` is the equivalent there.
+- x11docker falls back to no sound rather than failing the launch. Run with `--verbose` (already set for `max`/`min`/`sys`) to see which option it settled on.
+- `pulseaudio=host` and `pipewire` bind their socket under `/tmp`, where these modes also mount `--tmpfs=/tmp:exec`. Docker orders the tmpfs first so the socket lands inside it; if a silent container turns out to be missing `/tmp/*.socket.host`, use `AUDIO_MODE=pulseaudio=tcp`.
 
 ## Tools
 
@@ -410,6 +444,7 @@ Verify terminal capabilities with scripts in [test/](test/):
 ./test/glyphs.sh     # Nerd font rendering
 ./test/italics.sh    # Italic text
 ./test/gpg.sh        # GPG volume mapping
+./test/audio.sh      # Sound wiring and playback (requires ENABLE_AUDIO=1)
 ```
 
 ## Local AI Models

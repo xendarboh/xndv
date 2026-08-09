@@ -3,6 +3,7 @@ set -euo pipefail
 
 SELECTOR_CHAIN="${XNDV_SELECTOR:-rofi dmenu fzf}"
 CONTAINER_PREFIX="xndv"
+XNDV_ROOT=$(dirname "$(dirname "$(readlink -f "$0")")")
 XNDV_HOST_DATA="${HOME}/.local/share/xndv"
 XNDV_USER="xndv"
 HERDR_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/herdr"
@@ -25,6 +26,21 @@ for s in $SELECTOR_CHAIN; do command -v "$s" &>/dev/null && {
   break
 }; done
 [[ -z "${CONF_SELECTOR:-}" ]] && echo "No selector found in: $SELECTOR_CHAIN" >&2 && exit 1
+
+# Read a single setting, preferring an exported value over the project .env so
+# `FOO=1 xndv` still wins. Values are plain scalars — trailing comments and
+# whitespace are dropped.
+env_conf() {
+  local var="$1" default="$2" value
+  [[ -n "${!var:-}" ]] && return 0
+  value=$(sed -n "s/^[[:space:]]*${var}=//p" "${XNDV_ROOT}/.env" 2>/dev/null | tail -1 || true)
+  value="${value%%#*}"
+  value="${value//[[:space:]]/}"
+  printf -v "$var" '%s' "${value:-$default}"
+}
+
+env_conf ENABLE_AUDIO 0
+env_conf AUDIO_MODE auto
 
 ui() {
   local p="$1" f="${2:-}"
@@ -137,6 +153,51 @@ runner_available() {
   docker) command -v docker &>/dev/null ;;
   *) return 1 ;;
   esac
+}
+
+# Audio — host sound reaches the container through x11docker, so this applies
+# to the x11 runner only. AUDIO_MODE holds an x11docker sound option written
+# without its leading dashes, or "auto" to probe the host.
+
+# Pick the best sound option this host actually offers:
+#   pw-container present  PipeWire >= 1.4 — x11docker can hand out a sandboxed socket
+#   pipewire-pulse host   no dedicated socket possible; share the existing one
+#   sysbox runtime        container cannot reach the host runtime dir; go over TCP
+audio_probe() {
+  local runtime="$1" info
+
+  command -v pw-container &>/dev/null && echo "pipewire" && return 0
+
+  if command -v pactl &>/dev/null && info=$(LC_ALL=C pactl info 2>/dev/null); then
+    [[ "$runtime" == "sysbox-runc" ]] && echo "pulseaudio=tcp" && return 0
+    grep -qi pipewire <<<"$info" && echo "pulseaudio=host" && return 0
+    echo "pulseaudio=socket" && return 0
+  fi
+
+  [[ -d /dev/snd ]] && echo "alsa" && return 0
+
+  return 1
+}
+
+# Append the resolved sound option to an x11docker argument array.
+append_audio_args() {
+  local -n out_args="$1"
+  local mode="$AUDIO_MODE" runtime="" arg
+
+  [[ "$ENABLE_AUDIO" == "1" ]] || return 0
+
+  for arg in "${out_args[@]}"; do
+    [[ "$arg" == --runtime=* ]] && runtime="${arg#--runtime=}"
+  done
+
+  if [[ "$mode" == "auto" ]]; then
+    mode=$(audio_probe "$runtime") || {
+      echo "[xndv] ENABLE_AUDIO=1 but no host sound server found — launching without audio." >&2
+      return 0
+    }
+  fi
+
+  out_args+=("--${mode}")
 }
 
 # Mode Definitions
@@ -284,7 +345,9 @@ cmd_launch() {
   # this host can actually run (image present + runner available). A runner tag
   # (x11/tty) is shown only when a mode offers more than one available runner.
   #---------------------------------------------------------------------------
-  modes=($(declare -F | grep "mode_" | cut -d_ -f2-))
+  # anchor on the mode_ prefix — a bare grep also catches functions that merely
+  # contain "mode_" somewhere in their name
+  modes=($(declare -F | sed -n 's/^declare -f mode_//p'))
   menu=()
   for m in "${modes[@]}"; do
     # probe mode metadata in a subshell so mode-internal MOUNTS+=/ENV+= appends
@@ -392,9 +455,12 @@ cmd_launch() {
   [[ "$herdr_mount_selected" == "1" ]] && append_herdr_env env_args
   SHELL_CMD="${RUNNER_SHELL[$RUNNER]}"
   ARGS_DOCKER+=(--label xndv.mode=$mode)
-  [[ "$RUNNER" == "x11docker" ]] &&
-    cmd="x11docker --name $inst ${ARGS_X11DOCKER[*]} -- ${ARGS_DOCKER[*]} ${env_args[*]} ${vol_args[*]} -- $IMAGE $SHELL_CMD $inst" ||
+  if [[ "$RUNNER" == "x11docker" ]]; then
+    append_audio_args ARGS_X11DOCKER
+    cmd="x11docker --name $inst ${ARGS_X11DOCKER[*]} -- ${ARGS_DOCKER[*]} ${env_args[*]} ${vol_args[*]} -- $IMAGE $SHELL_CMD $inst"
+  else
     cmd="docker run -d --init --name $inst ${ARGS_DOCKER[*]} ${env_args[*]} ${vol_args[*]} $IMAGE $SHELL_CMD"
+  fi
 
   confirm_and_run "Generated Command" "$cmd"
 }

@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile.x11
       args:
         - IMAGE_BASE=${IMAGE_BASE}
+        - ENABLE_AUDIO
         - INSTALL_BROWSER_BRAVE
         - INSTALL_BROWSER_CHROMIUM
     image: xen/x11
