@@ -734,6 +734,8 @@ ARG INSTALL_TAURI=0
 RUN \
   --mount=type=cache,id=apt-archives,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,id=apt-lists,target=/var/lib/apt,sharing=locked \
+  --mount=type=cache,id=cargo-registry,target=${CARGO_HOME}/registry,uid=${_USER_ID} \
+  --mount=type=cache,id=cargo-target,target=$CARGO_TARGET_DIR,uid=${_USER_ID} \
   if [ "${INSTALL_TAURI}" = "1" ]; then \
     sudo apt update \
     && sudo apt install --no-install-recommends -y -q \
@@ -790,6 +792,8 @@ RUN /bin/echo -e "\ntest -f ~/.bash_xndv && . ~/.bash_xndv\n" >> .bashrc
 # tinty expects a ~/.config/ file, so run this after stow
 ARG OPTIONS_THEME
 RUN \
+  --mount=type=cache,id=cargo-registry,target=${CARGO_HOME}/registry,uid=${_USER_ID} \
+  --mount=type=cache,id=cargo-target,target=$CARGO_TARGET_DIR,uid=${_USER_ID} \
   cargo binstall \
     --continue-on-failure \
     --disable-telemetry \
