@@ -633,49 +633,6 @@ RUN git clone \
     --all \
     --no-zsh
 
-# install claude code
-ARG INSTALL_CLAUDECODE=0
-ENV CLAUDE_CONFIG_DIR /home/${_USER}/.local/share/claude
-RUN \
-  --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \
-  if [ "${INSTALL_CLAUDECODE}" = "1" ]; then \
-    wget -qN -P /dlu/claude-code https://claude.ai/install.sh \
-    && bash /dlu/claude-code/install.sh \
-    # 2026-03: claude is dir-dumb, hack it into shape
-    && mv ${CLAUDE_CONFIG_DIR}/versions/* ~/.local/bin/claude \
-    # install extras
-    && npx get-shit-done-cc --claude --global \
-  ; fi
-
-# install opencode
-ARG INSTALL_OPENCODE=0
-RUN \
-  if [ "${INSTALL_OPENCODE}" = "1" ]; then \
-    curl -fsSL https://opencode.ai/install | bash \
-    && export PATH=/home/${_USER}/.opencode/bin:${PATH} \
-    && sudo npm i -g opencode-wakatime && opencode-wakatime --install \
-    && sudo npm i -g opentmux \
-    && npx get-shit-done-cc --opencode --global \
-    && rtk init -g --opencode \
-  ; fi
-
-# install codex
-ARG INSTALL_CODEX=0
-ENV CODEX_HOME=/home/${_USER}/.local/share/codex
-RUN \
-  --mount=type=cache,id=apt-archives,target=/var/cache/apt,sharing=locked \
-  --mount=type=cache,id=apt-lists,target=/var/lib/apt,sharing=locked \
-  if [ "${INSTALL_CODEX}" = "1" ]; then \
-    sudo npm install -g @openai/codex \
-  ; fi
-
-# install oh-my-pi
-ARG INSTALL_OMP=0
-RUN \
-  if [ "${INSTALL_OMP}" = "1" ]; then \
-    bun install -g @oh-my-pi/pi-coding-agent \
-  ; fi
-
 # install extra bash things
 RUN mkdir ~/.bash
 
@@ -753,6 +710,47 @@ RUN \
       --disable-telemetry \
       --locked \
       tauri-cli \
+  ; fi
+
+# install claude code
+ARG INSTALL_CLAUDECODE=0
+ENV CLAUDE_CONFIG_DIR /home/${_USER}/.local/share/claude
+RUN \
+  --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \
+  if [ "${INSTALL_CLAUDECODE}" = "1" ]; then \
+    wget -qN -P /dlu/claude-code https://claude.ai/install.sh \
+    && bash /dlu/claude-code/install.sh \
+    # 2026-03: claude is dir-dumb, hack it into shape
+    && mv ${CLAUDE_CONFIG_DIR}/versions/* ~/.local/bin/claude \
+    # install extras
+    && npx get-shit-done-cc --claude --global \
+  ; fi
+
+# install codex
+ARG INSTALL_CODEX=0
+ENV CODEX_HOME=/home/${_USER}/.local/share/codex
+RUN \
+  if [ "${INSTALL_CODEX}" = "1" ]; then \
+    sudo npm install -g @openai/codex \
+  ; fi
+
+# install oh-my-pi
+ARG INSTALL_OMP=0
+RUN \
+  if [ "${INSTALL_OMP}" = "1" ]; then \
+    bun install -g @oh-my-pi/pi-coding-agent \
+  ; fi
+
+# install opencode
+ARG INSTALL_OPENCODE=0
+RUN \
+  if [ "${INSTALL_OPENCODE}" = "1" ]; then \
+    curl -fsSL https://opencode.ai/install | bash \
+    && export PATH=/home/${_USER}/.opencode/bin:${PATH} \
+    && sudo npm i -g opencode-wakatime && opencode-wakatime --install \
+    && sudo npm i -g opentmux \
+    && npx get-shit-done-cc --opencode --global \
+    && rtk init -g --opencode \
   ; fi
 
 # copy configuration files so that links to them work during docker build
