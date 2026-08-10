@@ -1,1 +1,16 @@
 setupVersion: 1
+symbolPreset: nerd
+modelRoles: 
+  default: openai-codex/gpt-5.6-sol
+tui: 
+  textSizing: true
+display: 
+  showTokenUsage: true
+theme: 
+  dark: dark-gruvbox
+recap: 
+  enabled: false
+dev: 
+  autoqaConsent: denied
+codexResets: 
+  autoRedeem: "no"
