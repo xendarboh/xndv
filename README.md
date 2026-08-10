@@ -98,9 +98,10 @@ Off by default. Sound is provided by the host's sound server — the container o
 # in .env
 ENABLE_AUDIO=1
 
-make build          # adds sound clients to the xen/x11 image
-./bin.host/xndv     # launcher adds the sound option to x11docker
-./test/audio.sh     # from inside the container: verify and play a sound
+make build            # adds sound clients to the xen/x11 image
+./bin.host/xndv       # launcher adds the sound option to x11docker
+./test/audio.sh       # from inside the container: verify and play a sound
+./test/microphone.sh  # record five seconds, then play the recording back
 ```
 
 `AUDIO_MODE` names an [x11docker](https://github.com/mviereck/x11docker) sound option, written without its leading dashes. The default `auto` probes the host and picks the first that fits:
@@ -445,6 +446,7 @@ Verify terminal capabilities with scripts in [test/](test/):
 ./test/italics.sh    # Italic text
 ./test/gpg.sh        # GPG volume mapping
 ./test/audio.sh      # Sound wiring and playback (requires ENABLE_AUDIO=1)
+./test/microphone.sh # Microphone recording and playback (requires ENABLE_AUDIO=1)
 ```
 
 ## Local AI Models

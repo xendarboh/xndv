@@ -165,6 +165,7 @@ RUN \
       libasound2-plugins \
       libcanberra-pulse \
       pavucontrol \
+      pipewire-bin \
       pulseaudio-utils \
       sound-theme-freedesktop \
     # route bare-ALSA apps through the sound server, falling back to the
