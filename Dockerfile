@@ -736,6 +736,7 @@ RUN \
 
 # install oh-my-pi
 ARG INSTALL_OMP=0
+ENV PI_CONFIG_DIR=.local/share/omp
 RUN \
   if [ "${INSTALL_OMP}" = "1" ]; then \
     bun install -g @oh-my-pi/pi-coding-agent \

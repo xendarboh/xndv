@@ -78,6 +78,9 @@ fi
 # ensure custom CODEX_HOME exist, so codex starts without error ~INSTALL_CODEX
 mkdir -v -p ~/.local/share/codex | sed 's/^/[xndv] /'
 
+# omp config lives in ~/.local/share (by our override for persistance) but we stow it in ~/.omp/
+(mkdir -v -p ~/.local/share/omp/agent && ln -svf ~/.omp/agent/config.yml ~/.local/share/omp/agent/config.yml) | sed 's/^/[xndv] /'
+
 # Workaround opencode's re-creation of file(s) that break stow symlinks
 F=~/.config/opencode/antigravity-accounts.json && test ! -L ${F} && rm -f ${F}
 
