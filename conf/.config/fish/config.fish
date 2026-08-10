@@ -115,6 +115,16 @@ function gra
     gr "$argv[1]" --exec 'git commit --amend --reset-author --no-edit' $argv[2..-1]
 end
 
+function see
+    set -l changed_within $argv[1]
+    test -n "$changed_within"; or set changed_within 1m
+    fd . --changed-within "$changed_within" --type f --hidden \
+        | grep -v Brave \
+        | grep -v chromium \
+        | grep -v mesa \
+        | sort
+end
+
 abbr b 'git branch -av'
 abbr d 'git diff'
 abbr s 'git status'
