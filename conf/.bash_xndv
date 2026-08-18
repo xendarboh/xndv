@@ -79,7 +79,11 @@ fi
 mkdir -v -p ~/.local/share/codex | sed 's/^/[xndv] /'
 
 # omp config lives in ~/.local/share (by our override for persistance) but we stow it in ~/.omp/
-(mkdir -v -p ~/.local/share/omp/agent && ln -svf ~/.omp/agent/config.yml ~/.local/share/omp/agent/config.yml) | sed 's/^/[xndv] /'
+(
+  mkdir -v -p ~/.local/share/omp/agent/extensions/ &&
+  ln -svf ~/.omp/agent/config.yml ~/.local/share/omp/agent/config.yml &&
+  ln -svf ~/.omp/agent/extensions/*.ts ~/.local/share/omp/agent/extensions/
+) | sed 's/^/[xndv] /'
 
 # Workaround opencode's re-creation of file(s) that break stow symlinks
 F=~/.config/opencode/antigravity-accounts.json && test ! -L ${F} && rm -f ${F}
