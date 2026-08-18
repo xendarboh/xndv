@@ -47,6 +47,7 @@ RUN \
     dos2unix \
     gpg-agent \
     htop \
+    inotify-tools \
     jq \
     less \
     libtool \
