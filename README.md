@@ -227,8 +227,8 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
 ### Git & Version Control
 
 - [delta](https://github.com/dandavison/delta): Syntax-highlighting pager for git, diff, grep, and blame output
+- [gh](https://github.com/cli/cli): GitHub's official CLI
 - [git](https://github.com/git/git): Latest stable version
-  - [gh](https://github.com/cli/cli): GitHub's official CLI
   - [git-absorb](https://github.com/tummychow/git-absorb): Automatic fixup commits
   - [git-crypt](https://github.com/xendarboh/git-crypt): Transparent file encryption \[fork\]
   - [git-filter-repo](https://github.com/newren/git-filter-repo): Rewrite git history fast
@@ -238,7 +238,7 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
     - gfr-lint-history: Lint all non-binary files across history
     - gfr-signed-off-by: Add Signed-off-by tags to commit range
   - [git-lfs](https://github.com/git-lfs/git-lfs): Large file versioning
-  - [lazygit](https://github.com/jesseduffield/lazygit): Terminal UI for git `{lz}`
+- [lazygit](https://github.com/jesseduffield/lazygit): Terminal UI for git `{lz}`
 
 ### Languages & Runtimes
 
