@@ -20,10 +20,13 @@ git clone https://github.com/xendarboh/xndv.git ~/src/xndv
 cd ~/src/xndv
 cp .env-example .env                 # edit to enable optional tools
 cp -a conf.local-example conf.local  # local overrides (see Customization)
-make build
+make build                           # headless server? use `make build-tty-sys` instead
 ./bin.host/xndv
 # optionally add ~/src/xndv/bin.host to your PATH for direct access to the launcher
 ```
+
+`make build` produces the X11 images for a desktop host; `make build-tty-sys` produces the
+smaller TTY-only images (no X11, no x11docker needed) for headless servers. See [Build](#build).
 
 ## Philosophy
 
@@ -40,7 +43,8 @@ make build
 | docker or podman                                                                            | Core                      | Container runtime                                                                                                                                   |
 | docker compose                                                                              | Building                  | Build orchestration                                                                                                                                 |
 | make                                                                                        | Building                  | Recommended; or run [Makefile](Makefile) commands manually                                                                                          |
-| [x11docker](https://github.com/mviereck/x11docker#installation)                             | `max`, `min`, `sys` (x11) | Desktop/GUI runner only; not needed for `tty` mode or headless (`sys` on a server)                                                                  |
+| [x11docker](https://github.com/mviereck/x11docker#installation)                             | `max`, `min`, `sys` (x11) | Desktop/GUI runner only; not needed for `tty` mode or headless (`sys` on a server). Install with `make install-x11docker`                           |
+| NVIDIA driver runfile (optional)                                                            | GPU in `min`, `sys`       | `make fetch-nvidia-driver` caches the host-matching installer for x11docker's fallback GPU                                                          |
 | [sysbox](https://github.com/nestybox/sysbox/blob/master/docs/user-guide/install-package.md) | `sys` mode                | Recommended for Docker-in-Docker                                                                                                                    |
 | rofi / dmenu / fzf                                                                          | Launcher                  | Any one; detected in order                                                                                                                          |
 | `pactl` (`pulseaudio-utils`) or PipeWire ≥ 1.4                                              | Audio (optional)          | Host sound server + client tool x11docker probes; see [Audio](#audio)                                                                               |
@@ -80,7 +84,7 @@ xndv enter -- lazygit
 # override the mapped working directory
 xndv enter xndv-sys -C /container/path -- lazygit
 
-# pass agent identity through Herdr
+# pass agent identity through herdr
 HERDR_AGENT=claude xndv enter xndv-sys -- claude "/do-stuff"
 
 # quote compound (fish shell) commands
@@ -214,20 +218,7 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
   - [fish-nx](https://github.com/jukben/fish-nx): Fish completions for Nx
   - [fisher](https://github.com/jorgebucaran/fisher): Plugin manager for Fish
   - [nix-env.fish](https://github.com/lilyball/nix-env.fish): Nix environment for fish _(INSTALL_NIX)_
-  - Shortcuts:
-    - `b` git branch -av
-    - `d` git diff
-    - `s` git status
-    - `gb` git branch
-    - `gg` git grep
-    - `gl` git log
-    - `gln` git log --oneline | nl
-    - `ga` git absorb --base `HEAD~N` (auto-detect ahead count)
-    - `gr [N]` git interactive rebase `HEAD~N` (auto-detect ahead count)
-    - `gra [N]` `gr` + reset git author
-    - `fm` fastmod --hidden
-    - `kt-*` kitty kittens
-    - `tc` tinty cycle configured themes
+  - Shortcuts: see [Shell Shortcuts](#shell-shortcuts)
 - [fzf](https://github.com/junegunn/fzf): Command-line fuzzy finder
 - [htop](https://github.com/htop-dev/htop): Interactive process viewer
 - [mani](https://github.com/alajmo/mani): CLI tool to help you manage multiple repositories
@@ -352,6 +343,8 @@ Scripts in [bin/](bin/) are available inside the container:
   - auto-selects local LLM (DMR) when available, falls back to opencode
   - opens editor (neovim) with N alternatives for final selection
   - invoke from lazygit with `CTRL+a`
+- [x-herdr-clear](bin/x-herdr-clear): Clear the current herdr pane's agent authority
+- [x-herdr-exec](bin/x-herdr-exec): Run a command while reporting its state to the herdr pane
 
 Scripts in [bin.host/](bin.host/) run on the host (outside the container):
 
@@ -367,6 +360,36 @@ Optional tools installed on-demand via [setup.d/](setup.d/):
 - [Aztec Toolchain](https://github.com/AztecProtocol/aztec-packages): Privacy-first L2
 - [WhisperX](https://github.com/m-bain/whisperX): Speech recognition with timestamps
 
+## Shell Shortcuts
+
+Fish abbreviations and functions from [config.fish](conf/.config/fish/config.fish), available in every container shell:
+
+| Shortcut    | Runs                                                               |
+| :---------- | :----------------------------------------------------------------- |
+| `s`         | `git status`                                                       |
+| `d`         | `git diff`                                                         |
+| `b`         | `git branch -av`                                                   |
+| `gb`        | `git branch`                                                       |
+| `gg`        | `git grep`                                                         |
+| `gl`        | `git log --show-signature`                                         |
+| `gln`       | `git log --oneline \| nl`                                          |
+| `ga`        | `git absorb --base HEAD~N`; `N` = commits ahead of upstream        |
+| `gr [N]`    | `git rebase -i --autosquash HEAD~N`; `N` defaults to commits ahead |
+| `gra [N]`   | `gr` + `--exec` amend each commit with `--reset-author`            |
+| `see [DUR]` | files changed within `DUR` (default `1m`) via `fd`, noise-filtered |
+| `fm`        | `fastmod --hidden`                                                 |
+| `grip`      | `grip --theme=dark`                                                |
+| `kt-clip`   | `kitty +kitten clipboard`                                          |
+| `kt-diff`   | `kitty +kitten diff`                                               |
+| `kt-icat`   | `kitty +kitten icat`                                               |
+| `lz`        | `lazygit`                                                          |
+| `oc`        | `opencode`                                                         |
+| `tc`        | `tinty cycle` through configured themes                            |
+
+Two commands are also transparently wrapped: `nx` repaints the prompt afterward, and `tuicr` adds
+`--no-update-check --stdout` and copies its output to the clipboard. Where installed,
+`brave-browser` and `chromium-browser` gain `--no-sandbox`.
+
 ## Build
 
 ### Configure
@@ -376,9 +399,37 @@ Edit `.env` to set versions and enable optional tools (copy from `.env-example`)
 ### Build Images
 
 ```sh
-make build      # Full image with X11 support
-make build-tty  # TTY-only image (smaller, no X11)
-make help       # All available targets
+make build          # X11 images: xen/x11 → xen/dev → xen/sys
+make build-tty      # TTY-only image (smaller, no X11)
+make build-tty-sys  # TTY-only + sysbox layer, for headless `sys` mode
+make help           # all available targets
+```
+
+### Rebuild & Maintain
+
+```sh
+make retag          # tag current images :prev first, to keep a rollback
+make rebuild        # rebuild X11 images with --no-cache, pulling a fresh base
+make rebuild-tty    # same for TTY-only (also: make rebuild-tty-sys)
+make refresh        # pull peripheral images (models, gateway) and reinstall the DMR runner
+```
+
+## Tests
+
+Verify terminal and environment capabilities with scripts in [test/](test/):
+
+```sh
+./test/truecolor.sh          # terminal color support
+./test/tput.sh               # 256-color tput table
+./test/glyphs.sh             # nerd font rendering
+./test/test-fonts.sh         # full nerd font codepoint sweep
+./test/kitty-debug-fonts.sh  # log kitty's font fallback chain
+./test/italics.sh            # italic text
+./test/gpg.sh                # GPG volume mapping
+./test/audio.sh              # sound wiring and playback (requires ENABLE_AUDIO=1)
+./test/microphone.sh         # microphone recording and playback (requires ENABLE_AUDIO=1)
+./test/herdr-notification.sh # herdr notification (title, body, sound)
+./test/ai-gateway.sh         # LLM gateway routes; run from the host with the gateway up
 ```
 
 ## Customization
@@ -410,20 +461,20 @@ Notable files in `conf.local/`, for example:
 
 ### herdr
 
-The image installs the latest stable Herdr with some herdr plugins. Run the same installer directly on a
-host when the Herdr server lives outside xndv:
+The image installs the latest stable herdr with some herdr plugins. Run the same installer directly on a
+host when the herdr server lives outside xndv:
 
 ```sh
 make install-herdr       # or: ./build/install.d/herdr.sh
 ```
 
-On a host this installs Herdr (a static binary — no toolchain) and links the plugin binaries already built
+On a host this installs herdr (a static binary — no toolchain) and links the plugin binaries already built
 in the `xen/dev` image, extracted via a throwaway container to minimize host dependencies. Re-run after rebuilding the image to
 pick up newer plugins.
 
-Configuration remains Stow-managed. When launched from a host Herdr pane, `bin.host/xndv` mounts the host
-Herdr directory at `~/.config/herdr-host` inside the container and forwards its socket, pane, client, and
-herdr-splits environment. Use Herdr's foreground-process hint when xndv wraps an agent, for example:
+Configuration remains Stow-managed. When launched from a host herdr pane, `bin.host/xndv` mounts the host
+herdr directory at `~/.config/herdr-host` inside the container and forwards its socket, pane, client, and
+herdr-splits environment. Use herdr's foreground-process hint when xndv wraps an agent, for example:
 
 ```sh
 HERDR_AGENT=codex ./bin.host/xndv enter xndv-sys -- codex '$worker-prime $msg wC'
@@ -460,19 +511,6 @@ tinty cycle                          # cycle through preferred schemes
 tinty apply base24-tokyo-night-dark  # or any scheme from `tinty list`
 ```
 
-### Tests
-
-Verify terminal capabilities with scripts in [test/](test/):
-
-```sh
-./test/truecolor.sh  # Terminal color support
-./test/glyphs.sh     # Nerd font rendering
-./test/italics.sh    # Italic text
-./test/gpg.sh        # GPG volume mapping
-./test/audio.sh      # Sound wiring and playback (requires ENABLE_AUDIO=1)
-./test/microphone.sh # Microphone recording and playback (requires ENABLE_AUDIO=1)
-```
-
 ## Local AI Models
 
 Run local AI model(s) with [Docker Model Runner](https://docs.docker.com/ai/model-runner/) and interact via [Open WebUI](https://github.com/open-webui/open-webui), [OpenCode](https://github.com/anomalyco/opencode), or `bin/x-ai`. Optional, independent of the main xndv build.
@@ -504,6 +542,8 @@ make models-up      # Start docker containers (detached)
 make models-down    # Stop
 make models-logs    # Follow logs
 make models-status  # Show containers
+
+make models-thinking-enable   # turn on model reasoning (also: models-thinking-disable)
 ```
 
 ## LLM Gateway
