@@ -22,6 +22,7 @@ cp .env-example .env                 # edit to enable optional tools
 cp -a conf.local-example conf.local  # local overrides (see Customization)
 make build
 ./bin.host/xndv
+# optionally add ~/src/xndv/bin.host to your PATH for direct access to the launcher
 ```
 
 ## Philosophy
@@ -63,7 +64,28 @@ All modes are containerized and sandboxed; the difference is capability and host
 
 **Runner**: A mode is launched under one of two runners — `x11` (x11docker + kitty window) or `tty` (headless `docker run -d`, re-enter via the menu). The launcher offers only the runners your host supports (x11docker installed vs. not) and only modes whose image is built. On a server without x11docker, `sys` and `tty` run headless automatically; where x11docker is installed, modes that support both (e.g. `sys`) show a runner choice (`sys·x11`, `sys·tty`).
 
-**Selector**: The launcher probes for an available selector. Override with `bin.host/xndv -s <selector>`.
+**Selector**: The launcher probes for an available selector. Override with `xndv -s <selector>`.
+
+```sh
+# interactive launcher: create or enter a container
+xndv
+
+# enter directly; maps host $PWD and remains in shell after the command exits
+xndv enter xndv-sys -- lazygit
+
+# omit the name with XNDV_CONTAINER or exactly one running container
+XNDV_CONTAINER=xndv-sys xndv enter -- lazygit
+xndv enter -- lazygit
+
+# override the mapped working directory
+xndv enter xndv-sys -C /container/path -- lazygit
+
+# pass agent identity through Herdr
+HERDR_AGENT=claude xndv enter xndv-sys -- claude "/do-stuff"
+
+# quote compound (fish shell) commands
+xndv enter xndv-sys -- 'git status; lazygit'
+```
 
 ### No Launcher
 
@@ -333,9 +355,10 @@ Scripts in [bin/](bin/) are available inside the container:
 
 Scripts in [bin.host/](bin.host/) run on the host (outside the container):
 
-- [xndv](bin.host/xndv): Interactive menu for managing the xndv environment
+- [xndv](bin.host/xndv): Interactive menu and direct entry for managing the xndv environment
   - `launch`: Select mode, name container, toggle mounts, attach to running instances
   - `clean`: Disk monitor and selective cleanup for host-persistent directories
+  - `enter`: Enter a running instance, optionally run a command, then remain in Fish
 
 ### Runtime Scripts
 
@@ -403,7 +426,7 @@ Herdr directory at `~/.config/herdr-host` inside the container and forwards its 
 herdr-splits environment. Use Herdr's foreground-process hint when xndv wraps an agent, for example:
 
 ```sh
-HERDR_AGENT=codex ./bin.host/xndv
+HERDR_AGENT=codex ./bin.host/xndv enter xndv-sys -- codex '$worker-prime $msg wC'
 ```
 
 Remote clients should use the server's plugin-action keybindings:

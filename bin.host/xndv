@@ -21,11 +21,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for s in $SELECTOR_CHAIN; do command -v "$s" &>/dev/null && {
-  CONF_SELECTOR="$s"
-  break
-}; done
-[[ -z "${CONF_SELECTOR:-}" ]] && echo "No selector found in: $SELECTOR_CHAIN" >&2 && exit 1
+init_selector() {
+  local s
+  for s in $SELECTOR_CHAIN; do command -v "$s" &>/dev/null && {
+    CONF_SELECTOR="$s"
+    break
+  }; done
+  [[ -z "${CONF_SELECTOR:-}" ]] && echo "No selector found in: $SELECTOR_CHAIN" >&2 && exit 1
+  return 0
+}
 
 # Read a single setting, preferring an exported value over the project .env so
 # `FOO=1 xndv` still wins. Values are plain scalars — trailing comments and
@@ -308,6 +312,137 @@ mode_tty() {
   )
 }
 
+resolve_container() {
+  local requested="$1" container
+  local containers=()
+
+  mapfile -t containers < <(
+    docker ps --filter "name=^${CONTAINER_PREFIX}-" --format '{{.Names}}' 2>/dev/null || true
+  )
+
+  if [[ -n "$requested" ]]; then
+    for container in "${containers[@]}"; do
+      [[ "$container" == "$requested" ]] && echo "$container" && return
+    done
+    echo "[xndv] container is not running: $requested" >&2
+    return 1
+  fi
+
+  case "${#containers[@]}" in
+  0)
+    echo "[xndv] no running ${CONTAINER_PREFIX} containers" >&2
+    return 1
+    ;;
+  1) echo "${containers[0]}" ;;
+  *)
+    echo "[xndv] multiple running containers; specify one:" >&2
+    printf '  %s\n' "${containers[@]}" >&2
+    return 1
+    ;;
+  esac
+}
+
+container_workdir() {
+  local container="$1" source destination suffix
+  local host_workdir host_home best_source="" best_destination=""
+
+  host_workdir=$(pwd -P)
+  host_home=$(readlink -f "$HOME")
+  [[ "$host_workdir" == "$host_home" ]] && echo "/home/${XNDV_USER}" && return
+
+  while IFS='|' read -r source destination; do
+    [[ "$host_workdir" == "$source" || "$host_workdir" == "$source/"* ]] || continue
+    if ((${#source} > ${#best_source})); then
+      best_source="$source"
+      best_destination="$destination"
+    fi
+  done < <(
+    docker inspect \
+      -f '{{range .Mounts}}{{printf "%s|%s\n" .Source .Destination}}{{end}}' \
+      "$container" 2>/dev/null
+  )
+
+  if [[ -z "$best_source" ]]; then
+    echo "[xndv] host directory is not mounted in $container: $host_workdir" >&2
+    echo "[xndv] use -C to set a container directory" >&2
+    return 1
+  fi
+
+  suffix="${host_workdir#"$best_source"}"
+  [[ -z "$suffix" ]] && echo "$best_destination" || echo "${best_destination%/}$suffix"
+}
+
+enter_container() {
+  local container="$1" workdir="$2"
+  local exec_args=(-ti --workdir "$workdir")
+  local herdr_container_config_dir initial_shell
+  shift 2
+
+  herdr_container_config_dir=$(container_herdr_config_dir "$container") \
+    && append_herdr_env exec_args "$herdr_container_config_dir"
+
+  # shellcheck disable=SC2016 # expanded by Bash inside the container
+  initial_shell='
+if (( $# == 0 )); then
+  exec fish -i
+elif (( $# == 1 )); then
+  exec fish -i -C "$1"
+fi
+initial_command=$(fish -N -c "string join -- \" \" (string escape -- \$argv)" "$@") || exit
+exec fish -i -C "$initial_command"
+'
+
+  echo "[xndv] entering $container at $workdir"
+  exec docker exec "${exec_args[@]}" "$container" bash -ic "$initial_shell" xndv "$@"
+}
+
+enter_existing() {
+  local container="" workdir=""
+  local command_args=()
+
+  while (($#)); do
+    case "$1" in
+    -C | --cwd)
+      [[ $# -ge 2 ]] || { echo "[xndv] $1 requires a directory" >&2; return 2; }
+      workdir="$2"
+      shift 2
+      ;;
+    -h | --help)
+      cat <<EOF
+Usage: $(basename "$0") enter [CONTAINER] [-C DIR] [-- COMMAND [ARG...]]
+
+Enter an existing xndv container, optionally run a Fish command, then remain in Fish.
+CONTAINER defaults to XNDV_CONTAINER or the only running xndv container.
+EOF
+      return
+      ;;
+    --)
+      shift
+      command_args=("$@")
+      break
+      ;;
+    -*)
+      echo "[xndv] unknown enter option: $1" >&2
+      return 2
+      ;;
+    *)
+      [[ -z "$container" ]] || { echo "[xndv] unexpected argument: $1" >&2; return 2; }
+      container="$1"
+      shift
+      ;;
+    esac
+  done
+
+  container=$(resolve_container "${container:-${XNDV_CONTAINER:-}}")
+  if [[ -n "$workdir" ]]; then
+    [[ "$workdir" == /* ]] || { echo "[xndv] container directory must be absolute: $workdir" >&2; return 2; }
+  else
+    workdir=$(container_workdir "$container")
+  fi
+
+  enter_container "$container" "$workdir" "${command_args[@]}"
+}
+
 cmd_launch() {
   #---------------------------------------------------------------------------
   # 1. Action Selection — attach to existing container or create new instance
@@ -333,11 +468,7 @@ cmd_launch() {
   [[ -z "$sel" ]] && exit 0
   if [[ "$sel" != "+ New Instance" ]]; then
     container="${sel##* }"
-    exec_args=()
-    herdr_container_config_dir=$(container_herdr_config_dir "$container") \
-      && append_herdr_env exec_args "$herdr_container_config_dir"
-    echo "[xndv] docker exec into container $container"
-    exec docker exec -it "${exec_args[@]}" "$container" sh -c 'bash || sh'
+    enter_container "$container" "/home/${XNDV_USER}"
   fi
 
   #---------------------------------------------------------------------------
@@ -595,12 +726,19 @@ cmd_clean() {
 #---------------------------------------------------------------------------
 
 main() {
+  if [[ "${1:-}" == "enter" ]]; then
+    shift
+    enter_existing "$@"
+    return
+  fi
+
+  init_selector
   cmds=($(declare -F | sort -r | grep " cmd_" | sed 's/.* cmd_//'))
   c_sel=$(ui "xndv" <<<"$(printf '%s\n' "${cmds[@]}")")
   [[ -z "$c_sel" ]] && exit 0
   "cmd_${c_sel}"
 }
 
-main
+main "$@"
 
 # vim ft=bash
