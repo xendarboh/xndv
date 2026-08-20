@@ -345,6 +345,8 @@ Scripts in [bin/](bin/) are available inside the container:
   - invoke from lazygit with `CTRL+a`
 - [x-herdr-clear](bin/x-herdr-clear): Clear the current herdr pane's agent authority
 - [x-herdr-exec](bin/x-herdr-exec): Run a command while reporting its state to the herdr pane
+- [x-herdr-spreader-apply](bin/x-herdr-spreader-apply): Apply every `herdr-spreader.yaml` found beneath the current directory
+  - `--dry-run` lists the files without applying them
 
 Scripts in [bin.host/](bin.host/) run on the host (outside the container):
 
@@ -383,6 +385,7 @@ Fish abbreviations and functions from [config.fish](conf/.config/fish/config.fis
 | `fm`        | `fastmod --hidden`                                                 |
 | `grip`      | `grip --theme=dark`                                                |
 | `hc`        | `x-herdr-clear`                                                    |
+| `hs`        | `x-herdr-spreader-apply`                                           |
 | `hx`        | `x-herdr-exec`                                                     |
 | `kt-clip`   | `kitty +kitten clipboard`                                          |
 | `kt-diff`   | `kitty +kitten diff`                                               |

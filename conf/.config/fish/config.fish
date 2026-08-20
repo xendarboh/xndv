@@ -149,6 +149,7 @@ abbr dc 'docker compose'
 abbr grip 'grip --theme=dark'
 abbr fm 'fastmod --hidden'
 abbr hc x-herdr-clear
+abbr hs x-herdr-spreader-apply
 abbr hx x-herdr-exec
 abbr lz lazygit
 abbr oc opencode

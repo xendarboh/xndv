@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Apply every herdr-spreader.yaml found beneath the current directory.
+#
+# Usage: x-herdr-spreader-apply [--dry-run]
+set -euo pipefail
+
+EXE=x-herdr-spreader-apply
+dry_run=0
+
+case "${1:-}" in
+  --dry-run) dry_run=1 ;;
+  '') ;;
+  *)
+    echo "Usage: ${EXE} [--dry-run]" >&2
+    exit 2
+    ;;
+esac
+
+mapfile -t -d '' files < <(fd --hidden --print0 --type f '^herdr-spreader\.yaml$' .)
+
+((${#files[@]})) || {
+  echo "${EXE}: no herdr-spreader.yaml found under $PWD" >&2
+  exit 1
+}
+
+for file in "${files[@]}"; do
+  echo "${EXE}: ${file}"
+  ((dry_run)) || herdr-spreader apply --file "$file"
+done
+
+# vim ft=bash
