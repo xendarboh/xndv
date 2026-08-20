@@ -125,6 +125,19 @@ function see
         | sort
 end
 
+# edit files of specified git status, for example "vimgit M" to open all modified files
+function vimgit
+    set -l code $argv[1]
+    test -z "$code" && echo "[xndv] usage: vimgit <status-code> [nvim-args...]" >&2 && return 1
+    set -l files (git status --porcelain | grep "$code " | awk '{print $2}')
+    test (count $files) -eq 0 && echo "[xndv] ERROR: no files with git status '$code'" >&2 && return 1
+    nvim $argv[2..-1] $files
+end
+
+function mkcd
+    mkdir -p "$argv[1]" && cd "$argv[1]"
+end
+
 abbr b 'git branch -av'
 abbr d 'git diff'
 abbr s 'git status'
@@ -132,11 +145,18 @@ abbr gb 'git branch'
 abbr gg 'git grep'
 abbr gl 'git log --show-signature'
 abbr gln 'git log --oneline | nl'
+abbr dc 'docker compose'
 abbr grip 'grip --theme=dark'
 abbr fm 'fastmod --hidden'
+abbr hc x-herdr-clear
+abbr hx x-herdr-exec
 abbr lz lazygit
 abbr oc opencode
 abbr tc 'tinty cycle'
+abbr v nvim
+abbr vd 'nvim -d'
+abbr vr 'nvim -R'
+abbr x 'cd $XNDV_DIR; and nvim'
 
 # INSTALL_BROWSER_BRAVE
 command -v brave-browser >/dev/null && abbr brave-browser 'brave-browser --no-sandbox'

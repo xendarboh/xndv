@@ -377,14 +377,23 @@ Fish abbreviations and functions from [config.fish](conf/.config/fish/config.fis
 | `gr [N]`    | `git rebase -i --autosquash HEAD~N`; `N` defaults to commits ahead |
 | `gra [N]`   | `gr` + `--exec` amend each commit with `--reset-author`            |
 | `see [DUR]` | files changed within `DUR` (default `1m`) via `fd`, noise-filtered |
+| `vimgit X`  | open every file with git status code `X` in nvim, e.g. `vimgit M`  |
+| `mkcd DIR`  | `mkdir -p DIR` then `cd` into it                                   |
+| `dc`        | `docker compose`                                                   |
 | `fm`        | `fastmod --hidden`                                                 |
 | `grip`      | `grip --theme=dark`                                                |
+| `hc`        | `x-herdr-clear`                                                    |
+| `hx`        | `x-herdr-exec`                                                     |
 | `kt-clip`   | `kitty +kitten clipboard`                                          |
 | `kt-diff`   | `kitty +kitten diff`                                               |
 | `kt-icat`   | `kitty +kitten icat`                                               |
 | `lz`        | `lazygit`                                                          |
 | `oc`        | `opencode`                                                         |
 | `tc`        | `tinty cycle` through configured themes                            |
+| `v`         | `nvim`                                                             |
+| `vd`        | `nvim -d` (diff mode)                                              |
+| `vr`        | `nvim -R` (read-only)                                              |
+| `x`         | `cd $XNDV_DIR` then open nvim there                                |
 
 Two commands are also transparently wrapped: `nx` repaints the prompt afterward, and `tuicr` adds
 `--no-update-check --stdout` and copies its output to the clipboard. Where installed,
