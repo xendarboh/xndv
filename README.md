@@ -91,6 +91,9 @@ HERDR_AGENT=claude xndv enter xndv-sys -- claude "/do-stuff"
 xndv enter xndv-sys -- 'git status; lazygit'
 ```
 
+These same commands work from inside a container, where `enter` simply runs the command there — so a
+script or herdr layout does not need to know which side it is on.
+
 ### No Launcher
 
 Run directly without the interactive menu, for example:
@@ -354,6 +357,7 @@ Scripts in [bin.host/](bin.host/) run on the host (outside the container):
   - `launch`: Select mode, name container, toggle mounts, attach to running instances
   - `clean`: Disk monitor and selective cleanup for host-persistent directories
   - `enter`: Enter a running instance, optionally run a command, then remain in Fish
+    - also on the container's PATH as `xndv`, where it runs the command in place
 
 ### Runtime Scripts
 

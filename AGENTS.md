@@ -303,6 +303,8 @@ Verify with `ls -la` — all scripts in this repo have `-rwxr-xr-x` or `-rwxr--r
 #### Naming Conventions
 
 - `bin/` and `bin.host/`: prefix with `x-` + kebab-case (e.g., `x-git-commit`, `x-fix-gpg-hang`)
+  - exception: `bin/xndv` is a symlink to `../bin.host/xndv`, exposing the launcher's container-aware
+    `enter` on the container PATH (`bin.host/` is excluded from the image, so it resolves via the mounted repo)
 - `bin.sys/`: exact name of the binary being wrapped (e.g., `docker`, `brave-browser`)
 - `setup.d/` and `test/`: kebab-case with `.sh` (e.g., `whisperx.sh`, `test-fonts.sh`)
 - Root scripts: no extension (e.g., `xndv`)

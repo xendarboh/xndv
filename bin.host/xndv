@@ -10,6 +10,25 @@ HERDR_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/herdr"
 HERDR_CONTAINER_CONFIG_DIR="/home/${XNDV_USER}/.config/herdr-host"
 HERDR_CONTAINER_CONFIG_DIR_LEGACY="/home/${XNDV_USER}/.config/herdr"
 HERDR_SOCKET_FILE="${HERDR_CONFIG_DIR}/herdr.sock"
+XNDV_RELEASE_FILE="/etc/xndv-release"
+
+# The release file is baked into the image, so its presence is the test for
+# running inside a xndv container (an env var could be lost or spoofed).
+in_container() { [[ -f "$XNDV_RELEASE_FILE" ]]; }
+
+# Bash snippet run as the container's login command: run the Fish command, if
+# any, then remain in an interactive Fish. Multiple args are escaped and joined
+# into a single Fish command line.
+# shellcheck disable=SC2016 # expanded by Bash inside the container
+INITIAL_SHELL='
+if (( $# == 0 )); then
+  exec fish -i
+elif (( $# == 1 )); then
+  exec fish -i -C "$1"
+fi
+initial_command=$(fish -N -c "string join -- \" \" (string escape -- \$argv)" "$@") || exit
+exec fish -i -C "$initial_command"
+'
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -375,25 +394,29 @@ container_workdir() {
 enter_container() {
   local container="$1" workdir="$2"
   local exec_args=(-ti --workdir "$workdir")
-  local herdr_container_config_dir initial_shell
+  local herdr_container_config_dir
   shift 2
 
   herdr_container_config_dir=$(container_herdr_config_dir "$container") \
     && append_herdr_env exec_args "$herdr_container_config_dir"
 
-  # shellcheck disable=SC2016 # expanded by Bash inside the container
-  initial_shell='
-if (( $# == 0 )); then
-  exec fish -i
-elif (( $# == 1 )); then
-  exec fish -i -C "$1"
-fi
-initial_command=$(fish -N -c "string join -- \" \" (string escape -- \$argv)" "$@") || exit
-exec fish -i -C "$initial_command"
-'
-
   echo "[xndv] entering $container at $workdir"
-  exec docker exec "${exec_args[@]}" "$container" bash -ic "$initial_shell" xndv "$@"
+  exec docker exec "${exec_args[@]}" "$container" bash -ic "$INITIAL_SHELL" xndv "$@"
+}
+
+# Inside a container there is nothing to enter — run the command right here.
+# The herdr environment is already in place, so only the directory is honored.
+# Plain `bash -c` (not `-ic`): the environment is set up and re-sourcing
+# .bash_xndv would repeat its stow and symlink side effects.
+enter_here() {
+  local workdir="$1"
+  shift
+
+  [[ -n "$workdir" ]] && { cd "$workdir" 2>/dev/null || {
+    echo "[xndv] no such directory: $workdir" >&2
+    return 1
+  }; }
+  exec bash -c "$INITIAL_SHELL" xndv "$@"
 }
 
 enter_existing() {
@@ -413,6 +436,7 @@ Usage: $(basename "$0") enter [CONTAINER] [-C DIR] [-- COMMAND [ARG...]]
 
 Enter an existing xndv container, optionally run a Fish command, then remain in Fish.
 CONTAINER defaults to XNDV_CONTAINER or the only running xndv container.
+Inside a xndv container the command runs here and CONTAINER is ignored.
 EOF
       return
       ;;
@@ -433,12 +457,20 @@ EOF
     esac
   done
 
-  container=$(resolve_container "${container:-${XNDV_CONTAINER:-}}")
-  if [[ -n "$workdir" ]]; then
-    [[ "$workdir" == /* ]] || { echo "[xndv] container directory must be absolute: $workdir" >&2; return 2; }
-  else
-    workdir=$(container_workdir "$container")
+  if [[ -n "$workdir" && "$workdir" != /* ]]; then
+    echo "[xndv] container directory must be absolute: $workdir" >&2
+    return 2
   fi
+
+  if in_container; then
+    [[ -n "$container" ]] \
+      && echo "[xndv] already inside a xndv container; ignoring: $container" >&2
+    enter_here "$workdir" "${command_args[@]}" # execs, or returns on a bad -C
+    return
+  fi
+
+  container=$(resolve_container "${container:-${XNDV_CONTAINER:-}}")
+  [[ -n "$workdir" ]] || workdir=$(container_workdir "$container")
 
   enter_container "$container" "$workdir" "${command_args[@]}"
 }
@@ -730,6 +762,11 @@ main() {
     shift
     enter_existing "$@"
     return
+  fi
+
+  if in_container; then
+    echo "[xndv] only \`enter\` is available inside a xndv container" >&2
+    exit 1
   fi
 
   init_selector
