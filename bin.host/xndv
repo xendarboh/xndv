@@ -160,6 +160,83 @@ if [[ -d "$HERDR_CONFIG_DIR" ]]; then
   MOUNTS+=("misc:${HERDR_CONFIG_DIR}:${HERDR_CONTAINER_CONFIG_DIR}")
 fi
 
+# Extra mounts from conf.local — the same fields as MOUNTS above, one per line,
+# with an optional leading `+` marking the mount pre-selected at launch:
+#   [+]tag:src:[dest]:[options]
+# A leading `~/` is the host home in src and the container home in dest. Blank
+# lines and lines starting with `#` are ignored.
+#
+# These name real places on the host, so a source that does not exist is a typo
+# rather than a directory to create — say so and move on instead of mounting an
+# empty directory over the destination.
+MOUNTS_CONF="${XNDV_ROOT}/conf.local/xndv/mounts.conf"
+
+# Indices of MOUNTS entries to pre-select, alongside the mode's TAGS.
+declare -A MOUNT_DEFAULT=()
+
+load_mounts_conf() {
+  local file="$1" line tag src dst opts default
+
+  [[ -r "$file" ]] || return 0
+
+  # Unquoted `read -r` trims surrounding whitespace; `|| [[ -n $line ]]` keeps a
+  # final line that has no trailing newline.
+  while read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+
+    default=0
+    if [[ "$line" == +* ]]; then
+      default=1
+      line="${line#+}"
+    fi
+
+    IFS=':' read -r tag src dst opts <<<"$line"
+    src="${src/#\~\//$HOME/}"
+    dst="${dst/#\~\///home/$XNDV_USER/}"
+
+    if [[ -z "$tag" || -z "$src" ]]; then
+      echo "[xndv] mounts.conf: malformed line, skipping: $line" >&2
+      continue
+    fi
+    if [[ ! -d "$src" ]]; then
+      echo "[xndv] mounts.conf: source not found, skipping: $src" >&2
+      continue
+    fi
+    # A destination under its own source makes the tree appear inside itself.
+    # Compare where the source lands in the container, not its host path.
+    if [[ -n "$dst" && "$dst" == "${src/#$HOME\///home/${XNDV_USER}/}"/* ]]; then
+      echo "[xndv] mounts.conf: dest nests inside source, skipping: $src -> $dst" >&2
+      continue
+    fi
+
+    MOUNTS+=("$tag:$src:$dst:$opts")
+    if ((default)); then
+      MOUNT_DEFAULT[$((${#MOUNTS[@]} - 1))]=1
+    fi
+  done <"$file"
+}
+
+load_mounts_conf "$MOUNTS_CONF"
+
+# Docker creates a missing bind destination itself, owned by root. Where the
+# destination sits inside a host tree that is already mounted — anything under
+# the home directory — that root-owned stub is left behind on the host, so make
+# it as the user first. A missing parent means the destination is likely a typo:
+# warn rather than materialize a whole tree for it.
+create_host_dest() {
+  local src="$1" dst="$2" host_dst parent
+
+  host_dst="${dst/#\/home\/${XNDV_USER}\//$HOME/}"
+  [[ "$host_dst" == "$src" || "$host_dst" != "$HOME"/* || -d "$host_dst" ]] && return 0
+
+  parent=$(dirname "$host_dst")
+  if [[ -d "$parent" ]]; then
+    mkdir -p "$host_dst"
+  else
+    echo "[xndv] mount dest parent missing on host: $parent" >&2
+  fi
+}
+
 # Runner Definitions — how a mode is presented/launched
 #   x11docker : desktop reality — x11docker + kitty window (foreground)
 #   docker    : headless reality — docker run -d, re-enter via docker exec
@@ -567,6 +644,15 @@ cmd_launch() {
       [[ -n "$tag" && "$tag" == "$dt" ]] && selected[$i]=1
     done
     [[ "$src" == "$HERDR_CONFIG_DIR" && -S "$HERDR_SOCKET_FILE" ]] && selected[$i]=1
+    [[ -n "${MOUNT_DEFAULT[$i]:-}" ]] && selected[$i]=1
+  done
+
+  # One source can be mounted to several destinations, so a menu row is
+  # identified by everything after the checkbox — not by its source alone.
+  declare -A mount_label
+  for i in "${!MOUNTS[@]}"; do
+    IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
+    printf -v "mount_label[$i]" "%-4s │ %s%s" "$tag" "$src" "${dst:+$symbol_arrow$dst}"
   done
 
   while true; do
@@ -574,22 +660,17 @@ cmd_launch() {
     for i in "${!MOUNTS[@]}"; do
       state="[ ]"
       [[ -n "${selected[$i]:-}" ]] && state="[x]"
-      IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
-      printf -v line "%s %-4s │ %s%s" "$state" "$tag" "$src" "${dst:+$symbol_arrow$dst}"
-      menu_lines+=("$line")
+      menu_lines+=("$state ${mount_label[$i]}")
     done
 
     choice=$(ui "Mounts" <<<"$(printf '%s\n' "${menu_lines[@]}")")
 
     [[ -z "$choice" || "$choice" == "▶ LAUNCH" ]] && break
 
-    # Bash-fu: Strip prefix up to "│ ", then strip everything from arrow symbol onwards
-    choice_path="${choice#*│ }"
-    choice_path="${choice_path%%${symbol_arrow}*}"
+    choice_label="${choice#* }" # drop the "[x] " / "[ ] " checkbox
 
     for i in "${!MOUNTS[@]}"; do
-      IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
-      if [[ "$src" == "$choice_path" ]]; then
+      if [[ "${mount_label[$i]}" == "$choice_label" ]]; then
         [[ -n "${selected[$i]:-}" ]] && unset "selected[$i]" || selected[$i]=1
         break
       fi
@@ -606,6 +687,7 @@ cmd_launch() {
     IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
     [[ -z "$dst" ]] && dst="${src/#$HOME\///home/${XNDV_USER}/}"
     [[ ! -d "$src" ]] && mkdir -p "$src"
+    create_host_dest "$src" "$dst"
     vol_args+=("--volume" "$src:$dst${opts:+:$opts}")
     [[ "$src" == "$HERDR_CONFIG_DIR" ]] && herdr_mount_selected=1
   done

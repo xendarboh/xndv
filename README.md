@@ -94,6 +94,33 @@ xndv enter xndv-sys -- 'git status; lazygit'
 These same commands work from inside a container, where `enter` simply runs the command there — so a
 script or herdr layout does not need to know which side it is on.
 
+### Mounts
+
+The launcher's Mount Selection menu lists the built-in mounts plus anything in `conf.local/xndv/mounts.conf`, so a host directory can appear at extra paths inside the container. That lets one repo live in several trees at once without duplicating it on disk — wherever a given tree wants to find it.
+
+A mapping is just a pair of paths, so any layout works. For example, to organize a project by provider URL (`~/src/github/user/repo`) and also map it within a workspace:
+
+```
+# [+]tag:src:[dest]:[options]
++acme:~/src/github/acme/widget:~/src/workspace/acme/widget:ro
+```
+
+A leading `+` pre-selects the mount at launch; without it, the mount is listed but off until toggled. `tag` groups the entry in the menu — a workspace name works well. A leading `~/` is the host home in `src` and the container home in `dest`. Sources must already exist; a missing one is reported and skipped. See [`conf.local-example/xndv/mounts.conf`](conf.local-example/xndv/mounts.conf).
+
+Mounts are set at container creation, so a new mapping takes effect on the next launch.
+
+**Why not symlinks**: agentic tools resolve paths before checking them against the session root, so a link pointing outside that root gets rejected — and `@` file selectors, file watchers, and ignore-file semantics follow suit. A bind mount is the same directory at a second path, with nothing to resolve, so every tool treats it as ordinary.
+
+**Picking the right tool** for one repo in several places:
+
+| Need                                      | Use                                                                                                 |
+| :---------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| Same live state visible in two trees      | Bind mount (`mounts.conf`)                                                                          |
+| Views on different branches               | `git worktree add` — one clone, separate checkouts, no syncing                                      |
+| Read-only reference, path can be anywhere | The agent's own out-of-tree access (Claude Code: `/add-dir` or `permissions.additionalDirectories`) |
+
+Every bind-mounted view is the same files: one `.git`, one branch, one index, and a deletion in any view is a deletion everywhere. Mount reference copies `ro` and keep exactly one writable location per repo.
+
 ### No Launcher
 
 Run directly without the interactive menu, for example:
@@ -472,6 +499,7 @@ Notable files in `conf.local/`, for example:
 | :----------------------- | :-------------------------------------------------- |
 | `xndv/bash.sh`           | Custom env vars (`GH_TOKEN`, `FLEEK_API_KEY`, etc.) |
 | `xndv/directory_map.txt` | Path mappings for tmux/kitty CWD preservation       |
+| `xndv/mounts.conf`       | Extra bind mounts (see [Mounts](#mounts))           |
 | `.wakatime.cfg`          | Wakatime/Wakapi config                              |
 | `.aws/`                  | AWS credentials                                     |
 
