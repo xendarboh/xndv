@@ -107,7 +107,18 @@ A mapping is just a pair of paths, so any layout works. For example, to organize
 
 A leading `+` pre-selects the mount at launch; without it, the mount is listed but off until toggled. `tag` groups the entry in the menu — a workspace name works well. A leading `~/` is the host home in `src` and the container home in `dest`. Sources must already exist; a missing one is reported and skipped. See [`conf.local-example/xndv/mounts.conf`](conf.local-example/xndv/mounts.conf).
 
-Mounts are set at container creation, so a new mapping takes effect on the next launch.
+Mounts are set at container creation, so a new mapping normally takes effect on the next launch.
+
+**Live mounts**: `xndv mount` applies the same `mounts.conf` from inside a running container — a toggle menu by default, or `add`/`rm`/`ls` directly.
+
+```sh
+xndv mount              # toggle the configured mounts, then apply
+xndv mount ls           # what is mounted here now
+xndv mount add ~/src/github/acme/widget ~/src/workspace/acme/widget ro
+xndv mount rm ~/src/workspace/acme/widget
+```
+
+These binds live only in the container's mount namespace: the host never sees them, and they are gone when the container stops — so there is no host state to clean up, and `mounts.conf` re-establishes everything at the next launch. Binding needs `CAP_SYS_ADMIN`, so it is available in [`sys` mode](#docker-in-docker-sysbox) only; `ls` works in every mode.
 
 **Why not symlinks**: agentic tools resolve paths before checking them against the session root, so a link pointing outside that root gets rejected — and `@` file selectors, file watchers, and ignore-file semantics follow suit. A bind mount is the same directory at a second path, with nothing to resolve, so every tool treats it as ordinary.
 
@@ -385,6 +396,7 @@ Scripts in [bin.host/](bin.host/) run on the host (outside the container):
   - `clean`: Disk monitor and selective cleanup for host-persistent directories
   - `enter`: Enter a running instance, optionally run a command, then remain in Fish
     - also on the container's PATH as `xndv`, where it runs the command in place
+  - `mount`: Bind `mounts.conf` entries inside a running container (`sys` mode); see [Mounts](#mounts)
 
 ### Runtime Scripts
 
@@ -428,6 +440,7 @@ Fish abbreviations and functions from [config.fish](conf/.config/fish/config.fis
 | `vd`        | `nvim -d` (diff mode)                                              |
 | `vr`        | `nvim -R` (read-only)                                              |
 | `x`         | `cd $XNDV_DIR` then open nvim there                                |
+| `xm`        | `xndv mount` — toggle live bind mounts (see [Mounts](#mounts))     |
 
 Two commands are also transparently wrapped: `nx` repaints the prompt afterward, and `tuicr` adds
 `--no-update-check --stdout` and copies its output to the clipboard. Where installed,

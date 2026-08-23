@@ -157,6 +157,7 @@ abbr tc 'tinty cycle'
 abbr v nvim
 abbr vd 'nvim -d'
 abbr vr 'nvim -R'
+abbr xm 'xndv mount'
 abbr x 'cd $XNDV_DIR; and nvim'
 
 # INSTALL_BROWSER_BRAVE

@@ -138,8 +138,11 @@ require_sudo() {
 }
 
 #---------------------------------------------------------------------------
-# LAUNCH
+# MOUNTS
 #---------------------------------------------------------------------------
+# One declaration, two consumers: the launcher turns selected entries into
+# `docker run --volume` arguments, and `xndv mount` binds them inside a running
+# container. Both share this list, its labels, and the toggle menu.
 
 # tag:src:[dest]:[options]
 MOUNTS=(
@@ -173,6 +176,11 @@ MOUNTS_CONF="${XNDV_ROOT}/conf.local/xndv/mounts.conf"
 
 # Indices of MOUNTS entries to pre-select, alongside the mode's TAGS.
 declare -A MOUNT_DEFAULT=()
+
+# Indices that came from mounts.conf. Only these are offered to `xndv mount`:
+# the built-in entries above map host paths that a running container cannot
+# reach, so re-binding them from the inside is meaningless.
+MOUNT_CONF=()
 
 load_mounts_conf() {
   local file="$1" line tag src dst opts default
@@ -210,6 +218,7 @@ load_mounts_conf() {
     fi
 
     MOUNTS+=("$tag:$src:$dst:$opts")
+    MOUNT_CONF+=($((${#MOUNTS[@]} - 1)))
     if ((default)); then
       MOUNT_DEFAULT[$((${#MOUNTS[@]} - 1))]=1
     fi
@@ -236,6 +245,191 @@ create_host_dest() {
     echo "[xndv] mount dest parent missing on host: $parent" >&2
   fi
 }
+
+# Split a MOUNTS entry into TAG/SRC/DST/OPTS, filling in the implied
+# destination: the source path with the host home rewritten to the container home.
+mount_fields() {
+  # shellcheck disable=SC2034 # TAG completes the record; callers pick what they need
+  IFS=':' read -r TAG SRC DST OPTS <<<"$1"
+  [[ -z "$DST" ]] && DST="${SRC/#$HOME\///home/${XNDV_USER}/}"
+  return 0 # an already-set destination must not read as failure under `set -e`
+}
+
+# Menu rows for the given MOUNTS indices, into MOUNT_LABEL. A row is identified
+# by its whole label rather than by source alone, since one source can be
+# mounted to several destinations.
+MOUNT_ARROW=' -> '
+declare -A MOUNT_LABEL=()
+mount_labels() {
+  local i tag src dst opts
+  for i in "$@"; do
+    IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
+    printf -v "MOUNT_LABEL[$i]" "%-4s │ %s%s%s" \
+      "$tag" "$src" "${dst:+$MOUNT_ARROW$dst}" "${opts:+ ($opts)}"
+  done
+}
+
+# Toggle menu over the given MOUNTS indices, reading and updating MOUNT_SELECTED.
+# Returns when the confirm row is chosen, or empty on cancel.
+declare -A MOUNT_SELECTED=()
+select_mounts() {
+  local prompt="$1" confirm="$2"
+  shift 2
+  local indices=("$@") menu_lines choice choice_label state i
+
+  while true; do
+    menu_lines=("$confirm")
+    for i in "${indices[@]}"; do
+      state="[ ]"
+      [[ -n "${MOUNT_SELECTED[$i]:-}" ]] && state="[x]"
+      menu_lines+=("$state ${MOUNT_LABEL[$i]}")
+    done
+
+    choice=$(ui "$prompt" <<<"$(printf '%s\n' "${menu_lines[@]}")")
+    [[ -z "$choice" || "$choice" == "$confirm" ]] && break
+
+    # Drop the checkbox by width: "[ ] " contains a space, so trimming to the
+    # first space would keep part of it and never match an unticked row.
+    choice_label="${choice:4}"
+    for i in "${indices[@]}"; do
+      if [[ "${MOUNT_LABEL[$i]}" == "$choice_label" ]]; then
+        [[ -n "${MOUNT_SELECTED[$i]:-}" ]] && unset "MOUNT_SELECTED[$i]" || MOUNT_SELECTED[$i]=1
+        break
+      fi
+    done
+  done
+}
+
+#---------------------------------------------------------------------------
+# MOUNT — bind mounts inside a running container
+#---------------------------------------------------------------------------
+# Same mounts.conf, applied from the inside. These binds live only in the
+# container's mount namespace: the host never sees them and they are gone when
+# the container stops, so there is no host state to maintain. Binding needs
+# CAP_SYS_ADMIN, which only `sys` mode carries.
+
+mount_bound() { mountpoint -q "$1"; }
+
+# Entries worth offering live: from mounts.conf, with a destination that
+# actually differs from the source, and a source visible in this container.
+mount_candidates() {
+  local i
+  for i in "${MOUNT_CONF[@]}"; do
+    mount_fields "${MOUNTS[$i]}"
+    [[ "$DST" == "$SRC" || ! -d "$SRC" ]] && continue
+    echo "$i"
+  done
+}
+
+mount_bind() {
+  local src="$1" dst="$2" opts="$3"
+
+  mount_bound "$dst" && return 0
+  [[ -d "$dst" ]] || mkdir -p "$dst" || return 1
+  sudo mount --bind "$src" "$dst" || return 1
+  # --bind ignores mount options; ro has to be applied as a second step.
+  if [[ ",$opts," == *,ro,* ]]; then
+    sudo mount -o remount,bind,ro "$dst" || return 1
+  fi
+  echo "[xndv] mounted: $src$MOUNT_ARROW$dst${opts:+ ($opts)}"
+}
+
+mount_unbind() {
+  local dst="$1"
+
+  mount_bound "$dst" || return 0
+  sudo umount "$dst" || return 1
+  echo "[xndv] unmounted: $dst"
+}
+
+mount_list() {
+  findmnt -lno TARGET,SOURCE,OPTIONS \
+    | awk -v h="$HOME/" '$1 == substr(h, 1, length(h) - 1) || index($1, h) == 1'
+}
+
+# `xndv mount` — interactive by default, imperative with a subcommand.
+mount_manage() {
+  local indices=() i
+
+  if ! in_container; then
+    echo "[xndv] mount runs inside a xndv container; use \`xndv enter -- xndv mount\`" >&2
+    return 1
+  fi
+
+  case "${1:-}" in
+  ls)
+    mount_list
+    return
+    ;;
+  add)
+    [[ $# -ge 3 ]] || { echo "[xndv] usage: xndv mount add SRC DST [OPTIONS]" >&2; return 2; }
+    mount_require_caps || return 1
+    mount_bind "$2" "$3" "${4:-}"
+    return
+    ;;
+  rm)
+    [[ $# -ge 2 ]] || { echo "[xndv] usage: xndv mount rm DST" >&2; return 2; }
+    mount_require_caps || return 1
+    mount_unbind "$2"
+    return
+    ;;
+  -h | --help)
+    cat <<EOF
+Usage: $(basename "$0") mount [ls | add SRC DST [OPTIONS] | rm DST]
+
+Bind mounts inside this container, from ${MOUNTS_CONF#"$XNDV_ROOT/"}.
+With no subcommand, toggle the configured mounts in a menu.
+Mounts are namespace-local: invisible to the host, gone when the container stops.
+Binding requires \`sys\` mode; \`ls\` works anywhere.
+EOF
+    return
+    ;;
+  "") ;;
+  *)
+    echo "[xndv] unknown mount subcommand: $1" >&2
+    return 2
+    ;;
+  esac
+
+  mapfile -t indices < <(mount_candidates)
+  if [[ ${#indices[@]} -eq 0 ]]; then
+    echo "[xndv] no mounts configured in ${MOUNTS_CONF#"$XNDV_ROOT/"}" >&2
+    return 1
+  fi
+  mount_require_caps || return 1
+
+  init_selector
+  mount_labels "${indices[@]}"
+  for i in "${indices[@]}"; do
+    mount_fields "${MOUNTS[$i]}"
+    mount_bound "$DST" && MOUNT_SELECTED[$i]=1
+  done
+
+  select_mounts "Mount" "▶ APPLY" "${indices[@]}"
+
+  # Reconcile the menu against reality: mount what was ticked, unmount the rest.
+  for i in "${indices[@]}"; do
+    mount_fields "${MOUNTS[$i]}"
+    if [[ -n "${MOUNT_SELECTED[$i]:-}" ]]; then
+      mount_bind "$SRC" "$DST" "$OPTS"
+    else
+      mount_unbind "$DST"
+    fi
+  done
+}
+
+# Binding needs CAP_SYS_ADMIN, granted only under the sysbox runtime. XNDV_MODE
+# comes from the launcher; when it is absent the container was started by other
+# means, so let mount itself be the judge.
+mount_require_caps() {
+  [[ -z "${XNDV_MODE:-}" || "$XNDV_MODE" == sys ]] && return 0
+  echo "[xndv] binding mounts requires sys mode (this container: $XNDV_MODE)" >&2
+  return 1
+}
+
+#---------------------------------------------------------------------------
+# LAUNCH
+#---------------------------------------------------------------------------
 
 # Runner Definitions — how a mode is presented/launched
 #   x11docker : desktop reality — x11docker + kitty window (foreground)
@@ -636,46 +830,17 @@ cmd_launch() {
   # 4. Mount Selection — toggle volume mounts before launching
   #---------------------------------------------------------------------------
   "mode_$mode"
-  symbol_arrow=' -> '
-  declare -A selected
   for i in "${!MOUNTS[@]}"; do
     IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
     for dt in "${TAGS[@]:-}"; do
-      [[ -n "$tag" && "$tag" == "$dt" ]] && selected[$i]=1
+      [[ -n "$tag" && "$tag" == "$dt" ]] && MOUNT_SELECTED[$i]=1
     done
-    [[ "$src" == "$HERDR_CONFIG_DIR" && -S "$HERDR_SOCKET_FILE" ]] && selected[$i]=1
-    [[ -n "${MOUNT_DEFAULT[$i]:-}" ]] && selected[$i]=1
+    [[ "$src" == "$HERDR_CONFIG_DIR" && -S "$HERDR_SOCKET_FILE" ]] && MOUNT_SELECTED[$i]=1
+    [[ -n "${MOUNT_DEFAULT[$i]:-}" ]] && MOUNT_SELECTED[$i]=1
   done
 
-  # One source can be mounted to several destinations, so a menu row is
-  # identified by everything after the checkbox — not by its source alone.
-  declare -A mount_label
-  for i in "${!MOUNTS[@]}"; do
-    IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
-    printf -v "mount_label[$i]" "%-4s │ %s%s" "$tag" "$src" "${dst:+$symbol_arrow$dst}"
-  done
-
-  while true; do
-    menu_lines=("▶ LAUNCH")
-    for i in "${!MOUNTS[@]}"; do
-      state="[ ]"
-      [[ -n "${selected[$i]:-}" ]] && state="[x]"
-      menu_lines+=("$state ${mount_label[$i]}")
-    done
-
-    choice=$(ui "Mounts" <<<"$(printf '%s\n' "${menu_lines[@]}")")
-
-    [[ -z "$choice" || "$choice" == "▶ LAUNCH" ]] && break
-
-    choice_label="${choice#* }" # drop the "[x] " / "[ ] " checkbox
-
-    for i in "${!MOUNTS[@]}"; do
-      if [[ "${mount_label[$i]}" == "$choice_label" ]]; then
-        [[ -n "${selected[$i]:-}" ]] && unset "selected[$i]" || selected[$i]=1
-        break
-      fi
-    done
-  done
+  mount_labels "${!MOUNTS[@]}"
+  select_mounts "Mounts" "▶ LAUNCH" "${!MOUNTS[@]}"
 
   #---------------------------------------------------------------------------
   # 5. Build Command & Confirm Launch
@@ -683,13 +848,12 @@ cmd_launch() {
   vol_args=()
   env_args=()
   herdr_mount_selected=0
-  for i in "${!selected[@]}"; do
-    IFS=':' read -r tag src dst opts <<<"${MOUNTS[$i]}"
-    [[ -z "$dst" ]] && dst="${src/#$HOME\///home/${XNDV_USER}/}"
-    [[ ! -d "$src" ]] && mkdir -p "$src"
-    create_host_dest "$src" "$dst"
-    vol_args+=("--volume" "$src:$dst${opts:+:$opts}")
-    [[ "$src" == "$HERDR_CONFIG_DIR" ]] && herdr_mount_selected=1
+  for i in "${!MOUNT_SELECTED[@]}"; do
+    mount_fields "${MOUNTS[$i]}"
+    [[ ! -d "$SRC" ]] && mkdir -p "$SRC"
+    create_host_dest "$SRC" "$DST"
+    vol_args+=("--volume" "$SRC:$DST${OPTS:+:$OPTS}")
+    [[ "$SRC" == "$HERDR_CONFIG_DIR" ]] && herdr_mount_selected=1
   done
 
   "mode_$mode"
@@ -840,14 +1004,22 @@ cmd_clean() {
 #---------------------------------------------------------------------------
 
 main() {
-  if [[ "${1:-}" == "enter" ]]; then
+  # Commands that work inside a container are dispatched before the guard below.
+  case "${1:-}" in
+  enter)
     shift
     enter_existing "$@"
     return
-  fi
+    ;;
+  mount)
+    shift
+    mount_manage "$@"
+    return
+    ;;
+  esac
 
   if in_container; then
-    echo "[xndv] only \`enter\` is available inside a xndv container" >&2
+    echo "[xndv] only \`enter\` and \`mount\` are available inside a xndv container" >&2
     exit 1
   fi
 
