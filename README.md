@@ -488,6 +488,7 @@ Verify terminal and environment capabilities with scripts in [test/](test/):
 ./test/microphone.sh         # microphone recording and playback (requires ENABLE_AUDIO=1)
 ./test/herdr-notification.sh # herdr notification (title, body, sound)
 ./test/ai-gateway.sh         # LLM gateway routes; run from the host with the gateway up
+./test/mounts.sh             # mounts.conf resolution; asserts, exits non-zero on failure
 ```
 
 ## Customization

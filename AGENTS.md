@@ -12,9 +12,12 @@ xndv is a dockerized terminal-based vim-centric development environment. It's "o
 
 ## Testing
 
-No automated tests exist. Manual verification scripts in `test/`:
+Most scripts in `test/` are manual verification — they print, a human judges. The
+exception is `test/mounts.sh`, which asserts and exits non-zero on failure, so it
+can be run unattended:
 
 ```sh
+./test/mounts.sh      # mounts.conf resolution (asserts; throwaway paths only)
 ./test/gpg.sh         # Verify GPG volume mapping
 ./test/truecolor.sh   # Terminal truecolor support
 ./test/glyphs.sh      # Font glyph rendering
