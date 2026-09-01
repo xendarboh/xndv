@@ -3,7 +3,9 @@ set -euo pipefail
 
 SELECTOR_CHAIN="${XNDV_SELECTOR:-rofi dmenu fzf}"
 CONTAINER_PREFIX="xndv"
-XNDV_ROOT=$(dirname "$(dirname "$(readlink -f "$0")")")
+# Normally derived from the script's own location; an exported value wins so the
+# mount tests can point the launcher at a throwaway project root.
+XNDV_ROOT="${XNDV_ROOT:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 XNDV_HOST_DATA="${HOME}/.local/share/xndv"
 XNDV_USER="xndv"
 HERDR_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/herdr"
@@ -169,9 +171,9 @@ fi
 # A leading `~/` is the host home in src and the container home in dest. Blank
 # lines and lines starting with `#` are ignored.
 #
-# These name real places on the host, so a source that does not exist is a typo
-# rather than a directory to create — say so and move on instead of mounting an
-# empty directory over the destination.
+# A source that does not exist yet is made by create_host_source when the mount
+# is selected, not here: listing an entry describes an intent, while ticking it
+# in the menu is the act that puts a directory on disk.
 MOUNTS_CONF="${XNDV_ROOT}/conf.local/xndv/mounts.conf"
 
 # Indices of MOUNTS entries to pre-select, alongside the mode's TAGS.
@@ -206,10 +208,6 @@ load_mounts_conf() {
       echo "[xndv] mounts.conf: malformed line, skipping: $line" >&2
       continue
     fi
-    if [[ ! -d "$src" ]]; then
-      echo "[xndv] mounts.conf: source not found, skipping: $src" >&2
-      continue
-    fi
     # A destination under its own source makes the tree appear inside itself.
     # Compare where the source lands in the container, not its host path.
     if [[ -n "$dst" && "$dst" == "${src/#$HOME\///home/${XNDV_USER}/}"/* ]]; then
@@ -226,6 +224,26 @@ load_mounts_conf() {
 }
 
 load_mounts_conf "$MOUNTS_CONF"
+
+# Docker creates a missing bind source itself, owned by root, leaving behind a
+# stub the user can neither write nor remove without sudo. Make it here instead,
+# as the invoking user, at the moment the mount is selected. An existing path is
+# never touched: a source that has to be root-owned is created that way by
+# whoever owns it, and this only ever adds what is missing.
+create_host_source() {
+  local src="$1"
+
+  [[ -d "$src" ]] && return 0
+  if [[ -e "$src" ]]; then
+    echo "[xndv] mount source is not a directory, skipping: $src" >&2
+    return 1
+  fi
+  mkdir -p "$src" || {
+    echo "[xndv] mount source could not be created, skipping: $src" >&2
+    return 1
+  }
+  echo "[xndv] created mount source: $src"
+}
 
 # Docker creates a missing bind destination itself, owned by root. Where the
 # destination sits inside a host tree that is already mounted — anything under
@@ -298,6 +316,28 @@ select_mounts() {
       fi
     done
   done
+}
+
+# Turn the selected mounts into `docker run --volume` arguments, making any
+# missing host directory first so the container runtime never gets the chance.
+# An entry whose source cannot be made is dropped rather than mounted — a
+# runtime that creates it as root is worse than a mount that did not happen.
+# MOUNT_HERDR_SELECTED reports whether the herdr socket directory is among the
+# selection, which is what decides the container's herdr environment.
+MOUNT_HERDR_SELECTED=0
+mount_volume_args() {
+  local -n out_args="$1"
+  local i
+
+  MOUNT_HERDR_SELECTED=0
+  for i in "${!MOUNT_SELECTED[@]}"; do
+    mount_fields "${MOUNTS[$i]}"
+    create_host_source "$SRC" || continue
+    create_host_dest "$SRC" "$DST"
+    out_args+=(--volume "$SRC:$DST${OPTS:+:$OPTS}")
+    [[ "$SRC" == "$HERDR_CONFIG_DIR" ]] && MOUNT_HERDR_SELECTED=1
+  done
+  return 0 # a source-less final entry must not read as failure under `set -e`
 }
 
 #---------------------------------------------------------------------------
@@ -847,21 +887,14 @@ cmd_launch() {
   #---------------------------------------------------------------------------
   vol_args=()
   env_args=()
-  herdr_mount_selected=0
-  for i in "${!MOUNT_SELECTED[@]}"; do
-    mount_fields "${MOUNTS[$i]}"
-    [[ ! -d "$SRC" ]] && mkdir -p "$SRC"
-    create_host_dest "$SRC" "$DST"
-    vol_args+=("--volume" "$SRC:$DST${OPTS:+:$OPTS}")
-    [[ "$SRC" == "$HERDR_CONFIG_DIR" ]] && herdr_mount_selected=1
-  done
+  mount_volume_args vol_args
 
   "mode_$mode"
   env_args+=(--env "XNDV_MODE=${mode}")
   for env_var in "${ENV[@]}"; do
     env_args+=(--env "$env_var")
   done
-  [[ "$herdr_mount_selected" == "1" ]] && append_herdr_env env_args
+  [[ "$MOUNT_HERDR_SELECTED" == "1" ]] && append_herdr_env env_args
   SHELL_CMD="${RUNNER_SHELL[$RUNNER]}"
   ARGS_DOCKER+=(--label xndv.mode=$mode)
   if [[ "$RUNNER" == "x11docker" ]]; then
@@ -1030,6 +1063,10 @@ main() {
   "cmd_${c_sel}"
 }
 
-main "$@"
+# Sourcing the launcher loads its functions without running a command, which is
+# how test/mounts.sh drives mount resolution directly.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
 
 # vim ft=bash
