@@ -1,4 +1,4 @@
-setupVersion: 1
+setupVersion: 2
 symbolPreset: nerd
 modelRoles: 
   default: openai-codex/gpt-5.6-sol
@@ -15,3 +15,5 @@ dev:
 codexResets: 
   autoRedeem: "no"
 defaultThinkingLevel: auto
+composer: 
+  shape: box
