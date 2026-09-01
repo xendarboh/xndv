@@ -5,6 +5,7 @@ delivery = "terminal"
 
 [ui]
 show_agent_labels_on_pane_borders = true
+status_indicators = "symbols"
 
 [theme]
 name = "gruvbox"
