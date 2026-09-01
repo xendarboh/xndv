@@ -70,6 +70,8 @@ All modes are containerized and sandboxed; the difference is capability and host
 
 **Selector**: The launcher probes for an available selector. Override with `xndv -s <selector>`.
 
+**Hostname**: Each container reports `<server>-<instance>` — the short name of the server it runs on, then the container name you gave it. `xndv-sys-1` on `server1` is `server1-xndv-sys-1` in every mode, and recreating it under the same name brings the same hostname back. There is nothing to configure: the value is derived at launch, so anything that keys on the machine name — WakaTime attribution, shell prompts, logs — stays pinned to the instance rather than drifting with the container id. Characters a hostname cannot hold (`_`, `.`, anything else outside `a-z0-9-`) become hyphens, and the name is capped at 63 characters by trimming the server segment first, so the instance stays distinguishable.
+
 ```sh
 # interactive launcher: create or enter a container
 xndv
@@ -493,7 +495,10 @@ Verify terminal and environment capabilities with scripts in [test/](test/):
 ./test/herdr-notification.sh # herdr notification (title, body, sound)
 ./test/ai-gateway.sh         # LLM gateway routes; run from the host with the gateway up
 ./test/mounts.sh             # mounts.conf resolution; asserts, exits non-zero on failure
+./test/hostname.sh           # container hostname contract; asserts, exits non-zero on failure
 ```
+
+`mounts.sh` and `hostname.sh` run unattended. Both exercise the runtime with a throwaway container when a local image is present; set `XNDV_TEST_IMAGE` to name one other than `alpine`.
 
 ## Customization
 
@@ -640,7 +645,7 @@ By default, gateway services bind to `127.0.0.1` only, which works for `max`/`tt
 | `GATEWAY_CLIENT_BASE_URL` | Override gateway URL (default: `http://${XNDV_HOSTNAME}:PORT`)    |
 | `GATEWAY_CLIENT_API_KEY`  | Override client auth key (default: `GATEWAY_MASTER_KEY`)          |
 
-`XNDV_HOSTNAME` is injected by the launcher at runtime so containers can reach host-exposed services across modes. It defaults to `localhost` in host-networked modes and `host.docker.internal` in isolated modes such as `sys` and `min`.
+`XNDV_HOSTNAME` is injected by the launcher at runtime so containers can reach host-exposed services across modes. It defaults to `localhost` in host-networked modes and `host.docker.internal` in isolated modes such as `sys` and `min`. It is an address the container dials out to — not the container's own name, which is [Hostname](#launcher).
 
 Set `GATEWAY_BIND_HOST=0.0.0.0` to listen on all interfaces, or set it to a specific LAN IP to expose the gateway only on that trusted network interface.
 
