@@ -245,23 +245,28 @@ create_host_source() {
   echo "[xndv] created mount source: $src"
 }
 
-# Docker creates a missing bind destination itself, owned by root. Where the
-# destination sits inside a host tree that is already mounted — anything under
-# the home directory — that root-owned stub is left behind on the host, so make
-# it as the user first. A missing parent means the destination is likely a typo:
-# warn rather than materialize a whole tree for it.
-create_host_dest() {
-  local src="$1" dst="$2" host_dst parent
+# A destination under the container home lands inside a host tree that is
+# already mounted, so whatever creates it is creating it on the host — and when
+# that is the container runtime, it is created as root. xndv does not provision
+# destination topology at all: an explicit mount point is the operator's to make
+# and to own, and a destination that is not there yet is a mapping nobody has
+# prepared. Fail loudly with both spellings of the path, since which one is
+# wrong — the container path or where it lands on the host — is the whole
+# question. A destination outside the host home is the container's own
+# filesystem and none of the launcher's business.
+require_host_dest() {
+  local src="$1" dst="$2" host_dst
 
   host_dst="${dst/#\/home\/${XNDV_USER}\//$HOME/}"
   [[ "$host_dst" == "$src" || "$host_dst" != "$HOME"/* || -d "$host_dst" ]] && return 0
 
-  parent=$(dirname "$host_dst")
-  if [[ -d "$parent" ]]; then
-    mkdir -p "$host_dst"
+  if [[ -e "$host_dst" ]]; then
+    echo "[xndv] mount destination is not a directory: $dst ($host_dst)" >&2
   else
-    echo "[xndv] mount dest parent missing on host: $parent" >&2
+    echo "[xndv] mount destination does not exist: $dst ($host_dst)" >&2
+    echo "[xndv] create it yourself first — xndv will not make one for you" >&2
   fi
+  return 1
 }
 
 # Split a MOUNTS entry into TAG/SRC/DST/OPTS, filling in the implied
@@ -319,9 +324,12 @@ select_mounts() {
 }
 
 # Turn the selected mounts into `docker run --volume` arguments, making any
-# missing host directory first so the container runtime never gets the chance.
-# An entry whose source cannot be made is dropped rather than mounted — a
-# runtime that creates it as root is worse than a mount that did not happen.
+# missing source first so the container runtime never gets the chance. The two
+# ends fail differently on purpose: a source is xndv's to create, so an entry
+# whose source cannot be made is simply dropped, while a destination is the
+# operator's to create, so a missing one is a mapping that was never prepared
+# and returns non-zero for the caller to abort on. Half a mount set is worse
+# than none — the container would come up looking right with a tree missing.
 # MOUNT_HERDR_SELECTED reports whether the herdr socket directory is among the
 # selection, which is what decides the container's herdr environment.
 MOUNT_HERDR_SELECTED=0
@@ -333,7 +341,7 @@ mount_volume_args() {
   for i in "${!MOUNT_SELECTED[@]}"; do
     mount_fields "${MOUNTS[$i]}"
     create_host_source "$SRC" || continue
-    create_host_dest "$SRC" "$DST"
+    require_host_dest "$SRC" "$DST" || return 1
     out_args+=(--volume "$SRC:$DST${OPTS:+:$OPTS}")
     [[ "$SRC" == "$HERDR_CONFIG_DIR" ]] && MOUNT_HERDR_SELECTED=1
   done
@@ -365,7 +373,13 @@ mount_bind() {
   local src="$1" dst="$2" opts="$3"
 
   mount_bound "$dst" && return 0
-  [[ -d "$dst" ]] || mkdir -p "$dst" || return 1
+  # Same rule as the launcher: the mount point is the operator's to make. Here
+  # it would only ever be made in this container's namespace, so a missing one
+  # means the mapping does not match the tree that is actually here.
+  if [[ ! -d "$dst" ]]; then
+    echo "[xndv] mount destination missing or not a directory: $dst" >&2
+    return 1
+  fi
   sudo mount --bind "$src" "$dst" || return 1
   # --bind ignores mount options; ro has to be applied as a second step.
   if [[ ",$opts," == *,ro,* ]]; then
@@ -389,7 +403,7 @@ mount_list() {
 
 # `xndv mount` — interactive by default, imperative with a subcommand.
 mount_manage() {
-  local indices=() i
+  local indices=() i status=0
 
   if ! in_container; then
     echo "[xndv] mount runs inside a xndv container; use \`xndv enter -- xndv mount\`" >&2
@@ -448,14 +462,17 @@ EOF
   select_mounts "Mount" "▶ APPLY" "${indices[@]}"
 
   # Reconcile the menu against reality: mount what was ticked, unmount the rest.
+  # One unusable entry must not strand the others, so failures are collected and
+  # reported at the end rather than ending the reconcile where they happen.
   for i in "${indices[@]}"; do
     mount_fields "${MOUNTS[$i]}"
     if [[ -n "${MOUNT_SELECTED[$i]:-}" ]]; then
-      mount_bind "$SRC" "$DST" "$OPTS"
+      mount_bind "$SRC" "$DST" "$OPTS" || status=1
     else
-      mount_unbind "$DST"
+      mount_unbind "$DST" || status=1
     fi
   done
+  return "$status"
 }
 
 # Binding needs CAP_SYS_ADMIN, granted only under the sysbox runtime. XNDV_MODE
@@ -887,7 +904,9 @@ cmd_launch() {
   #---------------------------------------------------------------------------
   vol_args=()
   env_args=()
-  mount_volume_args vol_args
+  # Before the generated command exists, let alone reaches Docker: a launch with
+  # an unprepared destination is abandoned, not offered for confirmation.
+  mount_volume_args vol_args || exit 1
 
   "mode_$mode"
   env_args+=(--env "XNDV_MODE=${mode}")

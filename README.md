@@ -107,7 +107,11 @@ A mapping is just a pair of paths, so any layout works. For example, to organize
 
 A leading `+` pre-selects the mount at launch; without it, the mount is listed but off until toggled. `tag` groups the entry in the menu — a workspace name works well. A leading `~/` is the host home in `src` and the container home in `dest`. See [`conf.local-example/xndv/mounts.conf`](conf.local-example/xndv/mounts.conf).
 
-A source that does not exist yet is created when the mount is selected, owned by the user running the launcher. Listing an entry alone puts nothing on disk — ticking it in the menu is the act that does. Sources that must be root-owned are created that way beforehand: an existing path is mounted exactly as it is, never re-created and never chowned. Skipping this is how a container runtime ends up making the directory itself, as `root`, on the host.
+The two ends of a mapping are handled differently, and the difference is deliberate.
+
+A **source** that does not exist yet is created when the mount is selected, owned by the user running the launcher. Listing an entry alone puts nothing on disk — ticking it in the menu is the act that does. A source that must be root-owned is created that way beforehand: an existing path is mounted exactly as it is, never re-created and never chowned.
+
+An explicit **destination** must already exist as a directory, and it is yours to make and to own. xndv never creates one, and never creates the tree above it. If a selected mount names a destination that is not there, the launch is abandoned before any command is generated — nothing is offered for confirmation and nothing reaches Docker. So `mkdir -p ~/src/workspace/acme` before the mapping above will resolve. `xndv mount` follows the same rule inside a running container, and fails visibly rather than creating the mount point.
 
 Mounts are set at container creation, so a new mapping normally takes effect on the next launch.
 
