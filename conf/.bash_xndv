@@ -164,12 +164,14 @@ fi
 
 ####################################
 # drop into fish shell
-# - only if the parent process is not fish
-# - allow bash commands (bash -c)
-# https://wiki.archlinux.org/title/fish#Modify_.bashrc_to_drop_into_fish
+# - `bash -c` stays in Bash; its command owns what runs next
+# - an interactive Bash started by Fish stays in Bash
+# - docker exec exposes PPID 0 when the parent is outside the PID namespace;
+#   treat that as a fresh entry instead of asking ps to resolve an invalid PID
 ####################################
 
-if [[ $(ps --no-header --pid=$PPID --format=comm) != "fish" && -z ${BASH_EXECUTION_STRING} ]]; then
+if [[ -z ${BASH_EXECUTION_STRING} ]] \
+  && { ((PPID == 0)) || [[ $(ps --no-header --pid="$PPID" --format=comm) != "fish" ]]; }; then
   exec fish
 fi
 
