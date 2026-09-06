@@ -52,12 +52,6 @@ eval "$(zoxide init bash)"
 # zoxide: When set to 1, z will print the matched directory before navigating to it.
 export _ZO_ECHO=1
 
-if [[ ! -f ~/.config/git/config && ! -f ~/.gitconfig ]]; then
-   git config --global init.defaultBranch main
-   git config --global user.email ${USER}@$(hostname)
-   git config --global user.name ${USER}
-fi
-
 # symlink to tinty data-dir baked into the image so it exists upon ~/.local/share/ volume mount
 D=~/.local/share/tinted-theming
 if [ ! -e ${D}/tinty ]; then
@@ -101,6 +95,13 @@ stow \
   --dir=${XNDV_DIR} \
   --verbose \
   conf.local
+
+# init a git config if a mount or stow of conf.local doesn't provide one
+if [[ ! -f ~/.config/git/config && ! -f ~/.gitconfig ]]; then
+   git config --global init.defaultBranch main
+   git config --global user.email ${USER}@$(hostname)
+   git config --global user.name ${USER}
+fi
 
 ls ~/.bash/*.sh &>/dev/null && source ~/.bash/*.sh
 
