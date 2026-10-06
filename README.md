@@ -213,7 +213,6 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
 
 - [Neovim](https://github.com/neovim/neovim): Vim-fork focused on extensibility and usability
   - [LazyVim](https://github.com/LazyVim/LazyVim): Neovim config for the lazy _(INSTALL_NVIM_LAZYVIM)_
-    - [avante.nvim](https://github.com/yetone/avante.nvim): Use your Neovim like using Cursor AI IDE!
     - [better-escape.nvim](https://github.com/max397574/better-escape.nvim): Escape from insert mode without delay
     - [gruvbox.nvim](https://github.com/ellisonleao/gruvbox.nvim): Gruvbox colorscheme
     - [herdr-splits.nvim](https://github.com/lmilojevicc/herdr-splits.nvim): Seamless navigation and resizing between Neovim and herdr
