@@ -436,6 +436,7 @@ Fish abbreviations and functions from [config.fish](conf/.config/fish/config.fis
 | `fm`        | `fastmod --hidden`                                                 |
 | `grip`      | `grip --theme=dark`                                                |
 | `hc`        | `x-herdr-clear`                                                    |
+| `hr`        | `herdr --remote-keybindings server --remote`                       |
 | `hs`        | `x-herdr-spreader-apply`                                           |
 | `hx`        | `x-herdr-exec`                                                     |
 | `kt-clip`   | `kitty +kitten clipboard`                                          |
