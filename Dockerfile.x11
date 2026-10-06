@@ -219,14 +219,15 @@ RUN \
     && /dl/brave/install.sh \
   ; fi
 
+# https://launchpad.net/~xtradeb/+archive/ubuntu/apps
 ARG INSTALL_BROWSER_CHROMIUM=0
 ENV INSTALL_BROWSER_CHROMIUM=${INSTALL_BROWSER_CHROMIUM}
 RUN \
   --mount=type=cache,id=apt-archives,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,id=apt-lists,target=/var/lib/apt,sharing=locked \
   if [ "${INSTALL_BROWSER_CHROMIUM}" = "1" ]; then \
-    add-apt-repository -y ppa:savoury1/chromium \
+    add-apt-repository -y ppa:xtradeb/apps \
     && apt update \
     && apt install -y -q --no-install-recommends \
-      chromium-browser \
+      chromium \
   ; fi

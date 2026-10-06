@@ -26,7 +26,7 @@ alias x="cd ${XNDV_DIR} && vim"
 command -v brave-browser >/dev/null && alias brave-browser='brave-browser --no-sandbox'
 
 # ~INSTALL_BROWSER_CHROMIUM
-command -v chromium-browser >/dev/null && alias chromium-browser='chromium-browser --no-sandbox'
+command -v chromium >/dev/null && alias chromium='chromium --no-sandbox'
 
 # ~INSTALL_PLATFORMIO
 if command -v platformio >/dev/null; then

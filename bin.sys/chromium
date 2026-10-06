@@ -1,0 +1,8 @@
+#!/bin/bash
+
+FLAGS=(
+  --disable-dev-shm-usage
+  --force-dark-mode
+)
+
+exec /usr/lib/chromium/chromium-original "${FLAGS[@]}" "$@"

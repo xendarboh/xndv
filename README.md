@@ -452,7 +452,7 @@ Fish abbreviations and functions from [config.fish](conf/.config/fish/config.fis
 
 Two commands are also transparently wrapped: `nx` repaints the prompt afterward, and `tuicr` adds
 `--no-update-check --stdout` and copies its output to the clipboard. Where installed,
-`brave-browser` and `chromium-browser` gain `--no-sandbox`.
+`brave-browser` and `chromium` gain `--no-sandbox`.
 
 ## Build
 

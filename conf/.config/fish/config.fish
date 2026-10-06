@@ -165,7 +165,7 @@ abbr x 'cd $XNDV_DIR; and nvim'
 command -v brave-browser >/dev/null && abbr brave-browser 'brave-browser --no-sandbox'
 
 # INSTALL_BROWSER_CHROMIUM
-command -v chromium-browser >/dev/null && abbr chromium-browser 'chromium-browser --no-sandbox'
+command -v chromium >/dev/null && abbr chromium 'chromium --no-sandbox'
 
 abbr kt-clip 'kitty +kitten clipboard'
 abbr kt-diff 'kitty +kitten diff'

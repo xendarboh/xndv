@@ -40,9 +40,9 @@ RUN \
 
 RUN \
   if [ "${INSTALL_BROWSER_CHROMIUM}" = "1" ]; then \
-  export F="chromium-browser" \
+  export F="chromium" \
   && mv /usr/lib/${F}/${F} /usr/lib/${F}/${F}-original \
-  && install -m 755 ${XNDV_DIR}/bin.sys/chromium-browser /usr/lib/${F}/${F} \
+  && install -m 755 ${XNDV_DIR}/bin.sys/${F} /usr/lib/${F}/${F} \
   ; fi
 
 USER ${XNDV_USER}
