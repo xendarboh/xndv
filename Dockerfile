@@ -48,6 +48,7 @@ RUN \
     gpg-agent \
     htop \
     inotify-tools \
+    iproute2 \
     jq \
     less \
     libtool \
