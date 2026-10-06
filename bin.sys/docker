@@ -36,10 +36,23 @@ start_time=$(date +%s)
 exit_code=$?
 
 # Fix root-owned files created during this docker run, in select directories
-if [[ $(whoami) != "root" && "$fix_user" = true && "$PWD" != "$HOME" ]]; then
+if ((EUID != 0)) && [[ $fix_user == true && $PWD != "$HOME" ]]; then
   echo "[xndv] fixing file permissions..."
-  find . -maxdepth 5 -newermt "@${start_time}" -user root -exec sudo chown -c $(id -u):$(id -g) {} + 2>/dev/null
-  find ~/ -maxdepth 2 -newermt "@${start_time}" -user root -exec sudo chown -R -c $(id -u):$(id -g) {} + 2>/dev/null
+
+  owner="$(id -u):$(id -g)"
+
+  fix_perms() {
+    find "$1" -mindepth 1 -maxdepth "$2" \
+      -newermt "@${start_time}" -user root \
+      -printf '[xndv] chown -R %p\n' \
+      -exec sudo chown -R "$owner" {} + \
+      -prune 2>/dev/null
+  }
+
+  fix_perms "$HOME" 2
+  fix_perms "$PWD" 5
+  fix_perms /tmp 3
+
   echo "[xndv] ...fixed file permissions"
 fi
 
