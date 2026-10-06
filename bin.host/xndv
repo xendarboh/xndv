@@ -810,6 +810,8 @@ enter_container() {
     && append_herdr_env exec_args "$herdr_container_config_dir"
 
   echo "[xndv] entering $container at $workdir"
+  # Herdr observes this host foreground wrapper, not the container process.
+  (($#)) && export HERDR_AGENT="$1"
   exec docker exec "${exec_args[@]}" "$container" bash -ic "$INITIAL_SHELL" xndv "$@"
 }
 

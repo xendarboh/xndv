@@ -12,14 +12,14 @@ xndv is a dockerized terminal-based vim-centric development environment. It's "o
 
 ## Testing
 
-Most scripts in `test/` are manual verification — they print, a human judges. The
-first three below assert and exit non-zero on failure, so they can be run
-unattended:
+Most scripts in `test/` are manual verification — they print, a human judges.
+The checks below assert and exit non-zero on failure, so they can be run unattended:
 
 ```sh
 ./test/entry-shell.sh # Bash-to-Fish entry transition (asserts; throwaway containers)
 ./test/mounts.sh      # mounts.conf resolution (asserts; throwaway paths only)
 ./test/hostname.sh    # container hostname contract (asserts; starts no xndv container)
+./test/enter-agent.sh # Host-side Herdr agent identity (asserts; starts no xndv container)
 ./test/truecolor.sh   # Terminal truecolor support
 ./test/glyphs.sh      # Font glyph rendering
 ./test/italics.sh     # Italic text rendering

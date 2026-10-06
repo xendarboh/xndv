@@ -86,15 +86,15 @@ xndv enter -- lazygit
 # override the mapped working directory
 xndv enter xndv-sys -C /container/path -- lazygit
 
-# pass agent identity through herdr
-HERDR_AGENT=claude xndv enter xndv-sys -- claude "/do-stuff"
+# host entry exposes the first command token to Herdr
+xndv enter xndv-sys -- claude "/do-stuff"
 
 # quote compound (fish shell) commands
 xndv enter xndv-sys -- 'git status; lazygit'
 ```
 
-These same commands work from inside a container, where `enter` simply runs the command there — so a
-script or herdr layout does not need to know which side it is on.
+These same commands work from inside a container, where `enter` simply runs the command there. The
+automatic Herdr identity is host-only; container-local entry cannot annotate its host-side wrapper.
 
 ### Mounts
 
@@ -544,10 +544,12 @@ pick up newer plugins.
 
 Configuration remains Stow-managed. When launched from a host herdr pane, `bin.host/xndv` mounts the host
 herdr directory at `~/.config/herdr-host` inside the container and forwards its socket, pane, client, and
-herdr-splits environment. Use herdr's foreground-process hint when xndv wraps an agent, for example:
+herdr-splits environment. For a host-issued `xndv enter -- COMMAND`, the host-side Docker foreground
+process exports the first command token as `HERDR_AGENT`, so herdr can identify the agent hidden behind
+the container boundary without a caller-supplied prefix:
 
 ```sh
-HERDR_AGENT=codex ./bin.host/xndv enter xndv-sys -- codex '$worker-prime $msg wC'
+./bin.host/xndv enter xndv-sys -- codex '$worker-prime $msg wC'
 ```
 
 Remote clients should use the server's plugin-action keybindings:
