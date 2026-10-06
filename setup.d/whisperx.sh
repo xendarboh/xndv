@@ -1,9 +1,9 @@
 #!/bin/bash -ex
 
-sudo apt update &&
-  sudo apt install --no-install-recommends -y -q \
-    ffmpeg \
-    libsndfile1
+sudo apt update
+sudo apt install --no-install-recommends -y -q \
+  ffmpeg \
+  libsndfile1
 
 uv tool install --upgrade \
   git+https://github.com/m-bain/whisperx.git
