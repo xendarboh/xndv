@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# Disable all Claude Code attribution (commit trailer, PR line, session URL)
+# in ./.claude/settings.json, preserving any existing settings.
+# https://code.claude.com/docs/en/settings#attribution
+
+set -euo pipefail
+
+file=".claude/settings.json"
+
+if [[ -f "$file" ]]; then
+  echo "[xndv] Updating existing $file" >&2
+else
+  echo "[xndv] Creating $file" >&2
+  mkdir -p "$(dirname "$file")"
+  echo '{}' >"$file"
+fi
+
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+
+jq '.attribution = {commit: "", pr: "", sessionUrl: false}' "$file" >"$tmp"
+cat "$tmp" >"$file"
+
+echo "[xndv] Claude Code attribution disabled" >&2
+jq .attribution "$file"
