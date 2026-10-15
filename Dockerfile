@@ -546,6 +546,13 @@ RUN \
     && rm -rf /tmp/circom \
   ; fi
 
+# install Foundry (foundryup only, run foundryup at runtime to install the toolchain)
+# installs to ${XDG_CONFIG_HOME}/.foundry/bin
+RUN \
+  --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \
+  wget -qN -P /dlu/foundry https://getfoundry.sh/install \
+  && sh /dlu/foundry/install
+
 # install noir
 # https://noir-lang.org/docs/getting_started_manually
 # NOTE: 2026-07: noirup without -v fails with gzip/tar error, remove explicit version once upstream issue ressolved

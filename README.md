@@ -326,6 +326,7 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
 ### ZK & Blockchain
 
 - [circom](https://github.com/iden3/circom): zkSnark circuit compiler _(INSTALL_CIRCOM)_
+- [Foundry](https://github.com/foundry-rs/foundry): blazing fast, portable and modular toolkit for Ethereum app dev
 - [Noir](https://github.com/noir-lang/noir): DSL for zero knowledge proofs _(INSTALL_NOIR)_
   - [barretenberg](https://github.com/AztecProtocol/aztec-packages): ZK prover backend
 - [Solidity](https://github.com/ethereum/solidity): Smart contract language

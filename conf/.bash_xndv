@@ -8,6 +8,7 @@ export PATH=~/.yarn/bin:${PATH}
 export PATH=./node_modules/.bin:${PATH}
 export PATH=~/.aztec/bin:${PATH}
 export PATH=~/.aztec/current/bin:~/.aztec/current/node_modules/.bin:${PATH}
+export PATH=~/.config/.foundry/bin:${PATH}
 export PATH=${XNDV_DIR}/bin:${PATH}
 
 [[ "${XNDV_MODE:-}" == "tty" ]] && export PATH="${XNDV_DIR}/bin.tty:${PATH}"
