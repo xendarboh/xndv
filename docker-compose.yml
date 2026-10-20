@@ -47,6 +47,7 @@ services:
         - INSTALL_PLATFORMIO
         - INSTALL_TAURI
         - INSTALL_TOMB
+        - INSTALL_WOODPECKER
         - OPTIONS_NVIM_APPNAME
         - OPTIONS_THEME
         - VERSION_FISH

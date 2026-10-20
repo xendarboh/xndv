@@ -207,6 +207,21 @@ RUN \
   && (dpkg -i /dl/${F} || true) \
   && apt install --no-install-recommends -y -q -f
 
+# install latest woodpecker-cli
+ARG INSTALL_WOODPECKER=0
+RUN \
+  --mount=type=cache,id=apt-archives,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,id=apt-lists,target=/var/lib/apt,sharing=locked \
+  --mount=type=cache,id=dl,target=/dl,sharing=locked \
+  if [ "${INSTALL_WOODPECKER}" = "1" ]; then \
+    export V=$(gh-latest woodpecker-ci/woodpecker) \
+    && export F="woodpecker-cli_${V}_amd64.deb" \
+    && wget -qN -P /dl "https://github.com/woodpecker-ci/woodpecker/releases/download/v${V}/${F}" \
+    && apt update \
+    && (dpkg -i /dl/${F} || true) \
+    && apt install --no-install-recommends -y -q -f \
+  ; fi
+
 # install latest shellcheck
 RUN \
   --mount=type=cache,id=dl,target=/dl,sharing=locked \

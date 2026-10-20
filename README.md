@@ -300,6 +300,7 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
     - gfr-signed-off-by: Add Signed-off-by tags to commit range
   - [git-lfs](https://github.com/git-lfs/git-lfs): Large file versioning
 - [lazygit](https://github.com/jesseduffield/lazygit): Terminal UI for git `{lz}`
+- [woodpecker-cli](https://github.com/woodpecker-ci/woodpecker): CLI for the Woodpecker CI/CD engine _(INSTALL_WOODPECKER)_
 
 ### Languages & Runtimes
 
