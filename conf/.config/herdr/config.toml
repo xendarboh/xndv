@@ -1,5 +1,11 @@
 onboarding = false
 
+[keys]
+resize_pane_left = "prefix+alt+h"
+resize_pane_down = "prefix+alt+j"
+resize_pane_up = "prefix+alt+k"
+resize_pane_right = "prefix+alt+l"
+
 [ui.toast]
 delivery = "terminal"
 
@@ -67,11 +73,12 @@ type = "plugin_action"
 command = "herdr-splits.nav-right"
 description = "Navigate right"
 
-[[keys.command]]
-key = "alt+h"
-type = "plugin_action"
-command = "herdr-splits.resize-left"
-description = "Resize left"
+# Keep Alt+h available to Neovim's hidden-files toggle; the host sees container Neovim as docker.
+# [[keys.command]]
+# key = "alt+h"
+# type = "plugin_action"
+# command = "herdr-splits.resize-left"
+# description = "Resize left"
 
 [[keys.command]]
 key = "alt+j"
