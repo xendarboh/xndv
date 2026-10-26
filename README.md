@@ -251,7 +251,6 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
   - [opencode.nvim](https://github.com/nickjvandyke/opencode.nvim): Neovim integration for opencode
 - [OpenPackage](https://github.com/enulus/openpackage): Universal package manager for AI coding agent skills/rules/commands
 - [repomix](https://github.com/yamadashy/repomix): Pack repository into AI-friendly file
-- [rtk](https://github.com/rtk-ai/rtk): Token-optimized CLI proxy (60-90% token savings on dev operations)
 - [tuicr](https://github.com/agavra/tuicr): Human-in-the-loop code review TUI for AI-generated changes
 
 ### Shell & Terminal
