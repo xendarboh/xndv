@@ -55,6 +55,7 @@ RUN \
     locales \
     lsof \
     man-db \
+    minisign \
     ncdu \
     netcat-openbsd \
     ninja-build \

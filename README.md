@@ -350,6 +350,7 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
 - [grip](https://github.com/joeyespo/grip): GitHub Markdown preview server _(INSTALL_GRIP)_
 - [ImageMagick](https://github.com/ImageMagick/ImageMagick): Image manipulation
 - [kpcli](http://kpcli.sourceforge.net/): KeePass CLI
+- [minisign](https://github.com/jedisct1/minisign): Simple tool to sign files and verify signatures
 - [ncdu](https://code.blicky.net/yorhel/ncdu): NCurses Disk Usage
 - [ninja-build](https://github.com/ninja-build/ninja): Fast build system
 - [platformio-core](https://github.com/platformio/platformio-core): Embedded development _(INSTALL_PLATFORMIO)_
