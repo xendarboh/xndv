@@ -149,10 +149,8 @@ abbr gln 'git log --oneline | nl'
 abbr dc 'docker compose'
 abbr grip 'grip --theme=dark'
 abbr fm 'fastmod --hidden'
-abbr hc x-herdr-clear
 abbr hr 'herdr --remote-keybindings server --remote'
 abbr hs x-herdr-spreader-apply
-abbr hx x-herdr-exec
 abbr lz lazygit
 abbr oc opencode
 abbr tc 'tinty cycle'
