@@ -395,6 +395,7 @@ Scripts in [bin/](bin/) are available inside the container:
   - opens editor (neovim) with N alternatives for final selection
   - invoke from lazygit with `CTRL+a`
 - [x-herdr-clear](bin/x-herdr-clear): Clear the current herdr pane's agent authority
+- [x-herdr-defaults](bin/x-herdr-defaults): Explicitly enable preferred Herdr plugin settings
 - [x-herdr-exec](bin/x-herdr-exec): Run a command while reporting its state to the herdr pane
 - [x-herdr-spreader-apply](bin/x-herdr-spreader-apply): Apply every `herdr-spreader.yaml` found beneath the current directory
   - `--dry-run` lists the files without applying them

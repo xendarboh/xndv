@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Reapply preferred Herdr plugin settings when explicitly requested.
+set -euo pipefail
+
+herdr plugin action invoke status-enable --plugin ez-corp.git-status
