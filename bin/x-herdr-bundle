@@ -15,7 +15,7 @@
 # today — this keeps that true if it ever changes.
 set -euo pipefail
 
-PLUGIN_SRC="${HOME}/.config/herdr/plugins/github"
+PLUGIN_SRC="${HOME}/.config/herdr/plugins/github-installations"
 
 [[ -d "$PLUGIN_SRC" ]] || {
   echo "x-herdr-bundle: no plugins at $PLUGIN_SRC" >&2
@@ -25,9 +25,11 @@ PLUGIN_SRC="${HOME}/.config/herdr/plugins/github"
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 
-for dir in "$PLUGIN_SRC"/*/; do
+count=0
+for dir in "$PLUGIN_SRC"/*/*/checkout/; do
   [[ -f "${dir}herdr-plugin.toml" ]] || continue
-  name=$(basename "$dir")
+  name=$(basename "$(dirname "$(dirname "${dir%/}")")")
+  ((count += 1))
 
   # .git is install-time provenance (plugins.json already records the commit);
   # deps/ is an uninitialised test submodule; target/ is build intermediates
@@ -50,6 +52,11 @@ for dir in "$PLUGIN_SRC"/*/; do
     { print }
   ' "${dir}herdr-plugin.toml" >"$stage/$name/herdr-plugin.toml"
 done
+
+if ((count == 0)); then
+  echo "x-herdr-bundle: no plugin checkouts at $PLUGIN_SRC" >&2
+  exit 1
+fi
 
 tar -C "$stage" -czf - .
 

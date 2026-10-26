@@ -20,7 +20,7 @@ set -euo pipefail
 REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 XNDV_IMAGE="${XNDV_IMAGE:-xen/dev}"
 BUNDLE_DIR="${HOME}/.local/share/xndv/xndv/herdr-plugins"
-PLUGIN_SRC="${HOME}/.config/herdr/plugins/github"
+PLUGIN_SRC="${HOME}/.config/herdr/plugins/github-installations"
 
 PLUGINS=(
   ezcorp-org/herdr-git-status
@@ -36,13 +36,13 @@ install_herdr() {
 }
 
 link_config() {
+  mkdir -p ~/.config/herdr/plugins
+
   # ensure custom config when this script is run on host
-  mkdir -p ~/.config/herdr
   ln -sfv "${REPO_DIR}/conf/.config/herdr/config.toml" ~/.config/herdr/config.toml
 
   # plugin config
-  ln -sfv "${REPO_DIR}/conf.local/.config/herdr/plugins/config/herdr-spreader/config.yaml" ~/.config/herdr/plugins/config/herdr-spreader/config.yaml
-  ln -sfv "${REPO_DIR}/conf/.config/herdr/plugins/config/ez-corp.git-status/config.toml" ~/.config/herdr/plugins/config/ez-corp.git-status/config.toml
+  ln -sfnv "${REPO_DIR}/conf/.config/herdr/plugins/config" ~/.config/herdr/plugins/config
 }
 
 #---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ link_config() {
 # image actually smaller; a subsequent RUN would only mask the bytes.
 prune_plugins() {
   local dir keep
-  for dir in "$PLUGIN_SRC"/*/; do
+  for dir in "$PLUGIN_SRC"/*/*/checkout/; do
     [[ -d "${dir}target/release" ]] || continue
     keep=$(mktemp -d)
     find "${dir}target/release" -maxdepth 1 -type f -executable -exec cp -p {} "$keep/" \;
@@ -85,7 +85,7 @@ install_container() {
   # a separate target dir (~77M of intermediates baked into the layer, since that
   # RUN had no cache mount) and let the CLI drift from the pinned plugin action.
   local spreader
-  spreader=$(echo "$PLUGIN_SRC"/herdr-spreader-*/target/release/herdr-spreader)
+  spreader=$(echo "$PLUGIN_SRC"/herdr-spreader-*/*/checkout/target/release/herdr-spreader)
   if [[ -x "$spreader" ]]; then
     mkdir -p ~/.local/bin
     ln -sfv "$spreader" ~/.local/bin/herdr-spreader
@@ -144,6 +144,14 @@ install_host() {
     say "bundle extraction failed (exit ${status})" >&2
     say "if ${XNDV_IMAGE} predates bin/x-herdr-bundle, rebuild it. check with:" >&2
     say "  docker run --rm ${XNDV_IMAGE} ls -l \"\$XNDV_DIR/bin/x-herdr-bundle\"" >&2
+    exit 1
+  fi
+
+  # An older image can emit a valid but empty archive. Do not discard a
+  # working bundle or claim success when there are no plugins to link.
+  if ! tar -tzf "$tarball" | grep -E '^\./[^/]+/herdr-plugin\.toml$' >/dev/null; then
+    rm -f "$tarball"
+    say "bundle has no plugin manifests; rebuild ${XNDV_IMAGE} with the updated x-herdr-bundle" >&2
     exit 1
   fi
 

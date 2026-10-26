@@ -544,6 +544,11 @@ On a host this installs herdr (a static binary — no toolchain) and links the p
 in the `xen/dev` image, extracted via a throwaway container to minimize host dependencies. Re-run after rebuilding the image to
 pick up newer plugins.
 
+The host and container have separate plugin registries. In a container pane attached to the host
+herdr server, `herdr plugin list` reports the **host server's** plugins, not the container's.
+After changing the installer or plugin versions, rebuild `xen/dev`, run the installer on the host,
+then check `herdr plugin list`.
+
 Configuration remains Stow-managed. When launched from a host herdr pane, `bin.host/xndv` mounts the host
 herdr directory at `~/.config/herdr-host` inside the container and forwards its socket, pane, client, and
 herdr-splits environment. For a host-issued `xndv enter -- COMMAND`, the host-side Docker foreground
