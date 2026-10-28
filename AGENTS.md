@@ -16,14 +16,15 @@ Most scripts in `test/` are manual verification — they print, a human judges.
 The checks below assert and exit non-zero on failure, so they can be run unattended:
 
 ```sh
-./test/entry-shell.sh # Bash-to-Fish entry transition (asserts; throwaway containers)
-./test/mounts.sh      # mounts.conf resolution (asserts; throwaway paths only)
-./test/hostname.sh    # container hostname contract (asserts; starts no xndv container)
-./test/enter-agent.sh # Host-side Herdr agent identity (asserts; starts no xndv container)
-./test/truecolor.sh   # Terminal truecolor support
-./test/glyphs.sh      # Font glyph rendering
-./test/italics.sh     # Italic text rendering
-./test/ai-gateway.sh  # Verify AI Gateway connectivity
+./test/entry-shell.sh      # Bash-to-Fish entry transition (asserts; throwaway containers)
+./test/mounts.sh           # mounts.conf resolution (asserts; throwaway paths only)
+./test/hostname.sh         # container hostname contract (asserts; starts no xndv container)
+./test/enter-agent.sh      # Host-side Herdr agent identity (asserts; starts no xndv container)
+./test/fish-completions.sh # Cached fish completions (asserts; throwaway cache, fake tool)
+./test/truecolor.sh        # Terminal truecolor support
+./test/glyphs.sh           # Font glyph rendering
+./test/italics.sh          # Italic text rendering
+./test/ai-gateway.sh       # Verify AI Gateway connectivity
 ```
 
 ## Code Style
@@ -165,8 +166,8 @@ test/                      # Manual verification scripts
    3. Update `docker-compose.yml` to pass the new ARG to the build
 3. Update `README.md` — add tool to the appropriate section in "Tools"
 4. If the tool supports shell completions:
-   - Add to `conf/.config/fish/config.fish`: `command -q <tool> && <tool> --completion fish | source`
-   - Follow existing patterns (guard with `command -q`, use tool's completion flag)
+   - Add to the `_complete` list in `conf/.config/fish/config.fish`: `_complete <tool> <args that print fish completions>`
+   - Keep the list alphabetical; `_complete` skips missing tools, caches the output and regenerates it when the binary changes
 5. If tool supports tinty/base16/base24 theming:
    - Add item to `conf/.config/tinted-theming/tinty/config.toml` if official tinted template exists
    - And/or add configuration for the tool (likely in `conf/.config/<tool>/`)

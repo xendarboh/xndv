@@ -2,19 +2,50 @@ if status is-interactive
     # Commands to run in interactive sessions can go here
 end
 
-command -q bat && bat --completion fish | source
-command -q buf && buf completion fish | source
-command -q herdr && herdr completion fish | source
-command -q mani && mani completion fish | source
-command -q nargo && nargo generate-completion-script fish | source
-command -q omp && omp completions fish | source
-command -q tinty && tinty generate-completion fish | source
-command -q uv && uv generate-shell-completion fish | source
-command -q woodpecker-cli && woodpecker-cli completion fish | source
-command -q wrangler && wrangler complete fish | source
-fnm completions --shell fish | source
+# tool-generated completions: cached per binary, regenerated when it changes, autoloaded by fish on <Tab>
+set -g _complete_dir (set -q XDG_CACHE_HOME; and echo $XDG_CACHE_HOME; or echo ~/.cache)/xndv/fish-completions
+set -p fish_complete_path $_complete_dir
+
+# usage: _complete <cmd> <args to make cmd print fish completions...>
+function _complete
+    set -l cmd $argv[1]
+    set -l file $_complete_dir/$cmd.fish
+    set -l bin (command -s $cmd); or begin
+        rm -f $file # tool gone: drop its stale completions
+        return 0
+    end
+    # fresh = same binary path (header line) and binary not changed since generation (ctime)
+    if test -f $file; and read -l header <$file; and test "$header" = "# xndv: $bin"
+        test (stat -L -c %Z $bin) -le (path mtime $file); and return 0
+    end
+    mkdir -p $_complete_dir
+    set -l tmp (mktemp $file.XXXXXX)
+    echo "# xndv: $bin" >$tmp
+    if $bin $argv[2..] >>$tmp 2>/dev/null; and test (count <$tmp) -gt 1
+        mv -f $tmp $file; and echo "[xndv] generated fish completions: $cmd" >&2
+    else
+        rm -f $tmp
+        echo "[xndv] ERROR: failed to generate fish completions: $cmd" >&2
+        return 1
+    end
+end
+
+if status is-interactive
+    _complete bat --completion fish
+    _complete buf completion fish
+    _complete fnm completions --shell fish
+    _complete git-absorb --gen-completions fish
+    _complete herdr completion fish
+    _complete mani completion fish
+    _complete nargo generate-completion-script fish
+    _complete omp completions fish
+    _complete tinty generate-completion fish
+    _complete uv generate-shell-completion fish
+    _complete woodpecker-cli completion fish
+    _complete wrangler complete fish
+end
+
 fnm env | source
-git-absorb --gen-completions fish | source
 starship init fish | source
 zoxide init fish | source
 

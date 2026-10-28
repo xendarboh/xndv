@@ -501,9 +501,10 @@ Verify terminal and environment capabilities with scripts in [test/](test/):
 ./test/ai-gateway.sh         # LLM gateway routes; run from the host with the gateway up
 ./test/mounts.sh             # mounts.conf resolution; asserts, exits non-zero on failure
 ./test/hostname.sh           # container hostname contract; asserts, exits non-zero on failure
+./test/fish-completions.sh   # cached fish completions; asserts, exits non-zero on failure
 ```
 
-`mounts.sh` and `hostname.sh` run unattended. Both exercise the runtime with a throwaway container when a local image is present; set `XNDV_TEST_IMAGE` to name one other than `alpine`.
+`mounts.sh`, `hostname.sh` and `fish-completions.sh` run unattended. `mounts.sh` and `hostname.sh` exercise the runtime with a throwaway container when a local image is present; set `XNDV_TEST_IMAGE` to name one other than `alpine`.
 
 ## Customization
 
