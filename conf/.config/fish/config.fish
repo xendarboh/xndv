@@ -11,6 +11,7 @@ command -q omp && omp completions fish | source
 command -q tinty && tinty generate-completion fish | source
 command -q uv && uv generate-shell-completion fish | source
 command -q woodpecker-cli && woodpecker-cli completion fish | source
+command -q wrangler && wrangler complete fish | source
 fnm completions --shell fish | source
 fnm env | source
 git-absorb --gen-completions fish | source

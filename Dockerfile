@@ -353,7 +353,8 @@ RUN npm install --global \
     opkg \
     prettier \
     prettier-plugin-solidity \
-    typescript
+    typescript \
+    wrangler
 
 # install latest deno
 RUN \

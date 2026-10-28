@@ -364,6 +364,7 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
 - [tree-sitter-cli](https://github.com/tree-sitter/tree-sitter/tree/master/crates/cli): Parser generator for syntax trees
 - [watchexec](https://github.com/watchexec/watchexec): Execute on file changes
 - [websocat](https://github.com/vi/websocat): WebSocket CLI client
+- [wrangler](https://github.com/cloudflare/workers-sdk): Cloudflare Workers CLI
 
 ### X11 Desktop
 
