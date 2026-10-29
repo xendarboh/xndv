@@ -34,6 +34,7 @@ if status is-interactive
     _complete bat --completion fish
     _complete buf completion fish
     _complete fnm completions --shell fish
+    _complete gh completion -s fish
     _complete git-absorb --gen-completions fish
     _complete herdr completion fish
     _complete mani completion fish
