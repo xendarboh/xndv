@@ -535,6 +535,19 @@ RUN \
   && rustup component add \
     rust-analyzer
 
+# install git-cliff and its native fish completions
+ARG INSTALL_GIT_CLIFF=0
+RUN \
+  --mount=type=cache,id=cargo-registry,target=${CARGO_HOME}/registry,uid=${_USER_ID} \
+  --mount=type=cache,id=cargo-target,target=$CARGO_TARGET_DIR,uid=${_USER_ID} \
+  if [ "${INSTALL_GIT_CLIFF}" = "1" ]; then \
+    cargo install --locked git-cliff \
+    && mkdir -p /tmp/git-cliff-completions \
+    && OUT_DIR=/tmp/git-cliff-completions git-cliff-completions \
+    && sudo install -Dm644 /tmp/git-cliff-completions/git-cliff.fish /usr/share/fish/vendor_completions.d/git-cliff.fish \
+    && rm -rf /tmp/git-cliff-completions \
+  ; fi
+
 # install latest bun and make it available in PATH
 RUN \
   --mount=type=cache,id=dlu,target=/dlu,sharing=locked,uid=${_USER_ID} \

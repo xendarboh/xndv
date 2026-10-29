@@ -290,6 +290,7 @@ Override with any of the above, e.g. `AUDIO_MODE=alsa=PCH` (card names from `apl
 - [gh](https://github.com/cli/cli): GitHub's official CLI
 - [git](https://github.com/git/git): Latest stable version
   - [git-absorb](https://github.com/tummychow/git-absorb): Automatic fixup commits
+  - [git-cliff](https://github.com/orhun/git-cliff): Generate changelogs from Git history _(INSTALL_GIT_CLIFF)_
   - [git-crypt](https://github.com/xendarboh/git-crypt): Transparent file encryption \[fork\]
   - [git-filter-repo](https://github.com/newren/git-filter-repo): Rewrite git history fast
     - gfr-bfg-ish: BFG Repo Cleaner reimplementation
