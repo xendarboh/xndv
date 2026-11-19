@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Filter history, deduplicate by newest occurrence, preserve chronological order.
+sed 's/^ *[0-9]* *//' | grep -F -- "$1" | grep -v 'grep ' | tac | awk '!seen[$0]++' | tac
