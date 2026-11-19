@@ -83,6 +83,17 @@ function fish_greeting
     # silence the greeting
 end
 
+# Default history to oldest-first; preserve native subcommands.
+functions -c history __history_original
+function history
+    switch "$argv[1]"
+        case delete clear clear-session merge save append
+            __history_original $argv
+        case '*'
+            __history_original --reverse $argv
+    end
+end
+
 function dirmap
     set F "$XNDV_DIR/conf.local/xndv/directory_map.txt"
     test -f "$F" || return
