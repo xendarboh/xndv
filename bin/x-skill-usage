@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Print a skill's usage, the way `<command> --help` does: the `metadata.usage`
+# literal block (`usage: |`) from its SKILL.md frontmatter, verbatim.
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") <skill-name | path>
+  skill-name    find <skill-name>/SKILL.md under the working directory
+  path          a skill directory, or its SKILL.md
+EOF
+}
+
+die() {
+  echo "[xndv] ERROR: $*" >&2
+  exit 1
+}
+
+case "${1:-}" in
+-h | --help)
+  usage
+  exit 0
+  ;;
+"")
+  usage >&2
+  exit 1
+  ;;
+esac
+[[ $# -eq 1 ]] || {
+  usage >&2
+  exit 1
+}
+arg="$1"
+
+# A path when it names something that exists or contains a slash; otherwise a name.
+if [[ -e "$arg" || "$arg" == */* ]]; then
+  if [[ -d "$arg" ]]; then
+    file="$arg/SKILL.md"
+  else
+    file="$arg"
+  fi
+  [[ -f "$file" ]] || die "skill not found: $arg"
+else
+  # Follow symlinks, so a linked skills dir is searched; then drop the
+  # duplicates that linking creates by comparing real paths.
+  mapfile -t matches < <(
+    find -L . \( -name .git -o -name node_modules \) -prune \
+      -o -type f -name SKILL.md -path "*/$arg/SKILL.md" -print 2>/dev/null \
+      | while read -r f; do readlink -f "$f"; done \
+      | sort -u
+  )
+  case "${#matches[@]}" in
+  0) die "skill not found: $arg" ;;
+  1) file="${matches[0]}" ;;
+  *) die "more than one skill matches '$arg': ${matches[*]}" ;;
+  esac
+fi
+
+# awk, not a YAML library: it is everywhere this runs, host or image, and
+# the one shape it reads is fixed by convention.
+# Exit codes: 0 printed, 3 no usage, 4 not a literal block, 5 tab indent,
+# 6 malformed. Output is buffered so a late error prints nothing.
+status=0
+awk '
+  function indent(s) { match(s, /^ */); return RLENGTH }
+  function quit(c) { code = c; done = 1; exit }
+  NR == 1 { if ($0 != "---") quit(3); next }
+  $0 == "---" { quit(found ? 0 : 3) }
+  inblock {
+    if ($0 ~ /^[ \t]*$/) { blanks++; next }
+    if ($0 ~ /^ *\t/) quit(5)
+    if (indent($0) <= key_indent) { inblock = 0 }
+    else {
+      if (!body_indent) body_indent = indent($0)
+      if (indent($0) < body_indent) quit(6)
+      for (; blanks > 0; blanks--) out = out "\n"
+      out = out substr($0, body_indent + 1) "\n"
+      found = 1
+      next
+    }
+  }
+  /^[^ \t#]/ { top = $0; sub(/:.*/, "", top); child_indent = 0; next }
+  top == "metadata" && /^ +[^ #]/ {
+    if (!child_indent) child_indent = indent($0)
+    if (indent($0) != child_indent || $0 !~ /^ *usage:/) next
+    if ($0 ~ /^ *usage: *\|[-+]? *$/) { inblock = 1; key_indent = child_indent; blanks = 0; next }
+    quit(4)
+  }
+  END {
+    if (!done) code = found ? 0 : 3
+    if (code == 0) printf "%s", out
+    exit code
+  }
+' "$file" || status=$?
+
+case "$status" in
+0) ;;
+3) die "no metadata.usage in $file" ;;
+4) die "metadata.usage is not a literal block (usage: |) in $file" ;;
+5) die "metadata.usage is indented with tabs in $file" ;;
+6) die "metadata.usage is malformed in $file" ;;
+*) die "failed to read $file" ;;
+esac

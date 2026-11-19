@@ -21,6 +21,7 @@ The checks below assert and exit non-zero on failure, so they can be run unatten
 ./test/hostname.sh         # container hostname contract (asserts; starts no xndv container)
 ./test/enter-agent.sh      # Host-side Herdr agent identity (asserts; starts no xndv container)
 ./test/fish-completions.sh # Cached fish completions (asserts; throwaway cache, fake tool)
+./test/skill-usage.sh      # x-skill-usage lookup and parsing (asserts; throwaway skills)
 ./test/truecolor.sh        # Terminal truecolor support
 ./test/glyphs.sh           # Font glyph rendering
 ./test/italics.sh          # Italic text rendering
