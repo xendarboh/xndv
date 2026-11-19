@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # Disable all Claude Code attribution (commit trailer, PR line, session URL)
-# in ./.claude/settings.json, preserving any existing settings.
+# in ./.claude/settings.local.json, preserving any existing settings.
 # https://code.claude.com/docs/en/settings#attribution
 
 set -euo pipefail
 
-file=".claude/settings.json"
+file=".claude/settings.local.json"
 
 if [[ -f "$file" ]]; then
   echo "[xndv] Updating existing $file" >&2
