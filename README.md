@@ -403,6 +403,7 @@ Scripts in [bin/](bin/) are available inside the container:
 - [x-herdr-spreader-apply](bin/x-herdr-spreader-apply): Apply every `herdr-spreader.yaml` found beneath the current directory
   - `--dry-run` lists the files without applying them
 - [x-histgrep](bin/x-histgrep): Filter and deduplicate Bash or Fish history: `history | x-histgrep something`
+- [x-skill-usage](bin/x-skill-usage): Print a skill's usage (`metadata.usage`), like `--help`: `x-skill-usage xndv-tool`
 
 Scripts in [bin.host/](bin.host/) run on the host (outside the container):
 

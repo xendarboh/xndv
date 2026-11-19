@@ -160,54 +160,7 @@ test/                      # Manual verification scripts
 
 ### Add a new tool to the Docker image
 
-1. Edit `Dockerfile` following existing conditional install patterns
-2. For optional tools:
-   1. add `INSTALL_*` ARG and conditional block
-   2. Update `.env-example` with the new `INSTALL_*` or `VERSION_*` variable
-   3. Update `docker-compose.yml` to pass the new ARG to the build
-3. Update `README.md` — add tool to the appropriate section in "Tools"
-4. If the tool supports shell completions:
-   - Add to the `_complete` list in `conf/.config/fish/config.fish`: `_complete <tool> <args that print fish completions>`
-   - Keep the list alphabetical; `_complete` skips missing tools, caches the output and regenerates it when the binary changes
-5. If tool supports tinty/base16/base24 theming:
-   - Add item to `conf/.config/tinted-theming/tinty/config.toml` if official tinted template exists
-   - And/or add configuration for the tool (likely in `conf/.config/<tool>/`)
-
-#### README.md Tool List Format
-
-The Tools section is an **Awesome-List** style curated collection with strict conventions:
-
-**Organization**: Tools are grouped into sections (Editor & Plugins, AI/Agentic Coding, Shell & Terminal, etc.)
-
-**Ordering**: **Case-insensitive alphabetical order** within each section (e.g., `Bun`, `Deno`, `Go`)
-
-**Entry format**:
-
-```markdown
-- [ToolName](https://github.com/org/repo): Brief description
-```
-
-**Optional tools** (controlled by build ARGs): Append `_(INSTALL_*)_` suffix:
-
-```markdown
-- [Nix](https://github.com/NixOS/nix): Purely functional package manager _(INSTALL_NIX)_
-```
-
-**Sub-tools** (plugins, extensions): Indent under parent:
-
-```markdown
-- [fish-shell](https://github.com/fish-shell/fish-shell): User-friendly command line shell
-  - [fisher](https://github.com/jorgebucaran/fisher): Plugin manager for Fish
-  - [fish-exa](https://github.com/gazorby/fish-exa): exa aliases for fish
-```
-
-**Example placement**: To add `htop`, find the Utilities section, then insert alphabetically between existing entries:
-
-```markdown
-- [ImageMagick](...)
-- [htop](https://github.com/htop-dev/htop): Interactive process viewer ← insert here
-- [kpcli](...)
-```
+Adding or removing a tool: invoke `/xndv-tool` (`.agents/skills/xndv-tool/`).
 
 ### Update tool versions
 
