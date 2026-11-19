@@ -127,6 +127,25 @@ check_absent "second identity is not passed into the container" \
   "HERDR_AGENT=claude" "$(array_repr "${docker_args[@]}")"
 
 echo ""
+echo "=== leading assignments are not host agent identities ==="
+for prefix in explicit combined token-first empty-value; do
+  case "$prefix" in
+    explicit) command=(HERDR_AGENT=omp omp) ;;
+    combined) command=(HERDR_AGENT=omp API_TOKEN=placeholder omp) ;;
+    token-first) command=(API_TOKEN=placeholder omp) ;;
+    empty-value) command=(_XNDV_TEST_1= omp) ;;
+  esac
+  run_host caller-supplied -- "${command[@]}"
+  check "$prefix selects the executable" omp "$(cat "$tmp/host-agent")"
+done
+run_host caller-supplied -- API_TOKEN=placeholder
+check "assignment-only entry preserves caller identity" caller-supplied "$(cat "$tmp/host-agent")"
+run_host unset -- API_TOKEN=placeholder
+check "assignment-only entry invents no identity" unset "$(cat "$tmp/host-agent")"
+run_host unset -- 'not-an-assignment=value' omp
+check "invalid assignment name remains a command" 'not-an-assignment=value' "$(cat "$tmp/host-agent")"
+
+echo ""
 echo "=== host interactive entry preserves the caller environment ==="
 run_host caller-supplied
 check "existing caller identity is unchanged" caller-supplied "$(cat "$tmp/host-agent")"

@@ -86,8 +86,9 @@ xndv enter -- lazygit
 # override the mapped working directory
 xndv enter xndv-sys -C /container/path -- lazygit
 
-# host entry exposes the first command token to Herdr
+# host entry exposes the executable after any leading NAME=value assignments to Herdr
 xndv enter xndv-sys -- claude "/do-stuff"
+xndv enter xndv-sys -- HERDR_AGENT=omp API_TOKEN=placeholder omp "/do-stuff"
 
 # quote compound (fish shell) commands
 xndv enter xndv-sys -- 'git status; lazygit'
@@ -556,8 +557,10 @@ then check `herdr plugin list`.
 Configuration remains Stow-managed. When launched from a host herdr pane, `bin.host/xndv` mounts the host
 herdr directory at `~/.config/herdr-host` inside the container and forwards its socket, pane, client, and
 herdr-splits environment. For a host-issued `xndv enter -- COMMAND`, the host-side Docker foreground
-process exports the first command token as `HERDR_AGENT`, so herdr can identify the agent hidden behind
-the container boundary without a caller-supplied prefix:
+process exports the first token after any leading `NAME=value` assignments as `HERDR_AGENT`,
+so herdr can identify the agent hidden behind the container boundary without a caller-supplied prefix.
+The original command arguments are unchanged: Fish still applies those assignments to the command.
+This inference covers separate command tokens, not shell programs wrapped in a single string:
 
 ```sh
 ./bin.host/xndv enter xndv-sys -- codex '$worker-prime $msg wC'

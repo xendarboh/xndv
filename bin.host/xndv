@@ -803,7 +803,7 @@ container_workdir() {
 enter_container() {
   local container="$1" workdir="$2"
   local exec_args=(-ti --workdir "$workdir")
-  local herdr_container_config_dir
+  local herdr_container_config_dir command
   shift 2
 
   herdr_container_config_dir=$(container_herdr_config_dir "$container") \
@@ -811,7 +811,11 @@ enter_container() {
 
   echo "[xndv] entering $container at $workdir"
   # Herdr observes this host foreground wrapper, not the container process.
-  (($#)) && export HERDR_AGENT="$1"
+  for command in "$@"; do
+    [[ "$command" =~ ^[a-zA-Z_][a-zA-Z0-9_]*= ]] && continue
+    export HERDR_AGENT="$command"
+    break
+  done
   exec docker exec "${exec_args[@]}" "$container" bash -ic "$INITIAL_SHELL" xndv "$@"
 }
 
