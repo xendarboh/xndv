@@ -1,5 +1,6 @@
 **/.netrwhist
 .aider*
+.claude/settings.local.json
 .env
 /*.local/
 /*.vault/
